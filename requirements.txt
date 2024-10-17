@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlalchemy
+pymysql
+pymongo
+nltk
+pandas
+python-multipartpydantic-settings
+pymysql
