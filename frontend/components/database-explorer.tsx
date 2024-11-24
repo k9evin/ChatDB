@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -13,22 +13,40 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { backendUrl } from '@/config';
+import config from '@/config';
 
-export function DatabaseExplorer() {
+interface DatabaseExplorerProps {
+  databaseName?: string;
+}
+
+interface SQLResult {
+  [key: string]: any;
+}
+
+interface MongoResult {
+  [key: string]: any;
+}
+
+export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
   const [dbType, setDbType] = useState<string>('mysql');
   const [tables, setTables] = useState<string[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>('');
-  const [sampleData, setSampleData] = useState<string>('');
+  const [sampleData, setSampleData] = useState<SQLResult[] | MongoResult[]>([]);
   const [sampleQueries, setSampleQueries] = useState<any[]>([]);
   const [naturalLanguageQuery, setNaturalLanguageQuery] = useState<string>('');
   const [generatedQuery, setGeneratedQuery] = useState<string>('');
-  const [queryResults, setQueryResults] = useState<string>('');
+  const [queryResults, setQueryResults] = useState<SQLResult[] | MongoResult[]>([]);
   const { toast } = useToast();
+  const [customDatabaseName, setCustomDatabaseName] = useState<string>(databaseName || '');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [selectedConstruct, setSelectedConstruct] = useState<string>('');
 
   useEffect(() => {
-    fetchTables();
-  }, [dbType]);
+    if (databaseName) {
+      setCustomDatabaseName(databaseName);
+      fetchTables();
+    }
+  }, [databaseName]);
 
   useEffect(() => {
     if (selectedTable) {
@@ -39,7 +57,9 @@ export function DatabaseExplorer() {
 
   const fetchTables = async () => {
     try {
-      const response = await fetch(`${backendUrl}/explore?db_type=${dbType}`);
+      const response = await fetch(
+        `${config.backendUrl}${config.api.explore}?db_type=${dbType}&database_name=${customDatabaseName}`
+      );
       if (response.ok) {
         const data = await response.json();
         setTables(data.tables || data.collections);
@@ -58,11 +78,11 @@ export function DatabaseExplorer() {
   const fetchSampleData = async () => {
     try {
       const response = await fetch(
-        `${backendUrl}/sample-data?db_type=${dbType}&table_name=${selectedTable}`
+        `${config.backendUrl}${config.api.sampleData}?db_type=${dbType}&table_name=${selectedTable}&database_name=${customDatabaseName}`
       );
       if (response.ok) {
         const data = await response.json();
-        setSampleData(JSON.stringify(data, null, 2));
+        setSampleData(dbType === 'mysql' ? data : data.result || data);
       } else {
         toast({
           title: 'Error',
@@ -78,7 +98,7 @@ export function DatabaseExplorer() {
   const fetchSampleQueries = async () => {
     try {
       const response = await fetch(
-        `${backendUrl}/sample-queries?db_type=${dbType}&table_name=${selectedTable}`
+        `${config.backendUrl}${config.api.sampleQueries}?db_type=${dbType}&table_name=${selectedTable}&database_name=${customDatabaseName}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -97,7 +117,7 @@ export function DatabaseExplorer() {
 
   const handleNaturalLanguageQuery = async () => {
     try {
-      const response = await fetch(`${backendUrl}/natural-language-query`, {
+      const response = await fetch(`${config.backendUrl}${config.api.naturalLanguageQuery}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,41 +126,54 @@ export function DatabaseExplorer() {
           query: naturalLanguageQuery,
           db_type: dbType,
           table_name: selectedTable,
+          database_name: customDatabaseName,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        setGeneratedQuery(data.generated_query);
+        if (data.generated_query) {
+          setGeneratedQuery(data.generated_query);
+        } else {
+          toast({
+            title: 'Info',
+            description: data.message || 'No query could be generated',
+          });
+        }
       } else {
+        const errorData = await response.json();
         toast({
           title: 'Error',
-          description: 'Failed to process natural language query',
+          description: errorData.detail || 'Failed to process natural language query',
           variant: 'destructive',
         });
       }
     } catch (error) {
       console.error('Error processing natural language query:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
     }
   };
 
   const executeQuery = async (query: string) => {
     try {
-      const response = await fetch(`${backendUrl}/execute-query`, {
+      const response = await fetch(`${config.backendUrl}${config.api.executeQuery}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query,
           db_type: dbType,
           table_name: selectedTable,
+          database_name: customDatabaseName,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        setQueryResults(JSON.stringify(data.result, null, 2));
+        setQueryResults(data.result);
       } else {
         toast({
           title: 'Error',
@@ -153,6 +186,101 @@ export function DatabaseExplorer() {
     }
   };
 
+  const renderSampleData = () => {
+    if (!sampleData) return 'No sample data available';
+
+    if (dbType === 'mysql') {
+      return (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              {sampleData.length > 0 && (
+                <tr>
+                  {Object.keys(sampleData[0]).map((column) => (
+                    <th
+                      key={column}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {column}
+                    </th>
+                  ))}
+                </tr>
+              )}
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {sampleData.map((row, i) => (
+                <tr key={i}>
+                  {Object.values(row).map((value: any, j) => (
+                    <td key={j} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    } else {
+      return (
+        <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
+          {JSON.stringify(sampleData, null, 2)}
+        </pre>
+      );
+    }
+  };
+
+  const handleDatabaseSubmit = async () => {
+    if (!customDatabaseName) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a database name',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await fetchTables();
+      setSelectedTable(''); // Reset table selection
+      setSampleData([]); // Reset sample data
+      setSampleQueries([]); // Reset sample queries
+    } catch (error) {
+      console.error('Error submitting database:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const refreshSampleQueries = async () => {
+    try {
+      const queryParams = new URLSearchParams({
+        db_type: dbType,
+        table_name: selectedTable,
+        ...(customDatabaseName && { database_name: customDatabaseName }),
+        ...(selectedConstruct && selectedConstruct !== 'all' && { construct: selectedConstruct })
+      });
+
+      const response = await fetch(
+        `${config.backendUrl}${config.api.sampleQueries}?${queryParams}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSampleQueries(data.sample_queries);
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch sample queries',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching sample queries:', error);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <Card>
@@ -162,12 +290,7 @@ export function DatabaseExplorer() {
         <CardContent>
           <div className="space-y-4">
             <div>
-              <label
-                htmlFor="db-type"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Select Database Type
-              </label>
+              <Label htmlFor="db-type">Database Type</Label>
               <Select value={dbType} onValueChange={setDbType}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select database type" />
@@ -178,26 +301,48 @@ export function DatabaseExplorer() {
                 </SelectContent>
               </Select>
             </div>
+
             <div>
-              <label
-                htmlFor="table-select"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Select Table/Collection
-              </label>
-              <Select value={selectedTable} onValueChange={setSelectedTable}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select table/collection" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tables.map((table) => (
-                    <SelectItem key={table} value={table}>
-                      {table}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="database-name" className="flex items-center gap-1">
+                Database Name
+                <span className="text-red-500">*</span>
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="database-name"
+                  value={customDatabaseName}
+                  onChange={(e) => setCustomDatabaseName(e.target.value)}
+                  placeholder={`Enter ${dbType === 'mysql' ? 'database' : 'database'} name`}
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={handleDatabaseSubmit}
+                  disabled={!customDatabaseName || isSubmitting}
+                >
+                  {isSubmitting ? 'Loading...' : 'Submit'}
+                </Button>
+              </div>
             </div>
+
+            {tables.length > 0 && (
+              <div>
+                <Label htmlFor="table-select">
+                  {dbType === 'mysql' ? 'Table' : 'Collection'}
+                </Label>
+                <Select value={selectedTable} onValueChange={setSelectedTable}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={`Select ${dbType === 'mysql' ? 'table' : 'collection'}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tables.map((table) => (
+                      <SelectItem key={table} value={table}>
+                        {table}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -209,24 +354,47 @@ export function DatabaseExplorer() {
               <CardTitle>Sample Data</CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-                {sampleData || 'No sample data available'}
-              </pre>
+              {renderSampleData()}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Sample Queries</CardTitle>
+              <CardTitle className="flex justify-between items-center">
+                <span>Sample Queries</span>
+                <div className="flex gap-2">
+                  <Select value={selectedConstruct} onValueChange={setSelectedConstruct}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Select SQL construct" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Constructs</SelectItem>
+                      <SelectItem value="group by with aggregation">Group By with Aggregation</SelectItem>
+                      <SelectItem value="group by with count">Group By with Count</SelectItem>
+                      <SelectItem value="order by with limit">Order By with Limit</SelectItem>
+                      <SelectItem value="where clause">Where Clause</SelectItem>
+                      <SelectItem value="having clause">Having Clause</SelectItem>
+                      <SelectItem value="inner join">Inner Join</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={refreshSampleQueries} variant="outline" size="sm">
+                    Refresh
+                  </Button>
+                </div>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
                 {sampleQueries.map((query, index) => (
                   <li key={index} className="bg-gray-100 p-2 rounded-md">
                     <p className="font-semibold">{query.natural_language}</p>
-                    <pre className="text-sm mt-1">{query.sql_query}</pre>
+                    <pre className="text-sm mt-1">
+                      {dbType === 'mysql' ? query.mysql_query : query.mongodb_query}
+                    </pre>
                     <Button
-                      onClick={() => executeQuery(query.sql_query)}
+                      onClick={() => executeQuery(
+                        dbType === 'mysql' ? query.mysql_query : query.mongodb_query
+                      )}
                       className="mt-2"
                       size="sm"
                     >
@@ -276,9 +444,43 @@ export function DatabaseExplorer() {
               <CardTitle>Query Results</CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-                {queryResults || 'No results yet'}
-              </pre>
+              {dbType === 'mysql' ? (
+                <div className="overflow-x-auto">
+                  {queryResults && queryResults.length > 0 ? (
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          {Object.keys(queryResults[0]).map((column) => (
+                            <th
+                              key={column}
+                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                            >
+                              {column}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {queryResults.map((row: any, i: number) => (
+                          <tr key={i}>
+                            {Object.values(row).map((value: any, j: number) => (
+                              <td key={j} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p>No results available</p>
+                  )}
+                </div>
+              ) : (
+                <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
+                  {queryResults.length > 0 ? JSON.stringify(queryResults, null, 2) : 'No results yet'}
+                </pre>
+              )}
             </CardContent>
           </Card>
         </>

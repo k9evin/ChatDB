@@ -9,7 +9,7 @@ app = FastAPI()
 # Allow Cors
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=settings.cors_origin_list,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -17,11 +17,20 @@ app.add_middleware(
 app.include_router(router)
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+    )
     logging.info(
         "\033[93mPlease set up the .env file using .env.example as a reference before running the program.\033[0m"
     )
 
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        "app.main:app",
+        host=settings.api_host,
+        port=settings.api_port,
+        reload=settings.api_debug, 
+        reload_dirs=["app"], 
+        reload_excludes=["*/__pycache__/*"],
+    )
