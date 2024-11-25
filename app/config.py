@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+from functools import lru_cache
 
 
 class Settings(BaseSettings):
@@ -22,10 +23,16 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        env_file_encoding = "utf-8"
 
     @property
     def cors_origin_list(self) -> list[str]:
         return self.cors_origins.split(",")
 
 
-settings = Settings()
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()

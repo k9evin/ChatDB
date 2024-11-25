@@ -13,8 +13,7 @@ from typing import Optional
 import os
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 router = APIRouter()
@@ -25,6 +24,9 @@ data_upload_service = DataUploadService(mysql_manager, mongo_manager)
 db_explorer_service = DBExplorerService(mysql_manager, mongo_manager)
 query_generator_service = QueryGeneratorService()
 nlp_processor = NLPProcessor()
+
+logger = logging.getLogger(__name__)
+logger.info(f"MySQL connection string: {settings.mysql_connection_string}")
 
 
 @router.get("/")
