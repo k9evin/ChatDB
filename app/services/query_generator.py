@@ -1,6 +1,7 @@
-import random
 from typing import List, Dict, Tuple, Optional
 from enum import Enum
+import random
+import logging
 
 
 class DatabaseType(Enum):
@@ -9,76 +10,115 @@ class DatabaseType(Enum):
 
 
 class QueryGeneratorService:
-    def __init__(self):
+    def __init__(self, mysql_manager=None, mongo_manager=None):
+        self.mysql_manager = mysql_manager
+        self.mongo_manager = mongo_manager
         self.query_patterns: List[Tuple[str, Dict[str, str]]] = [
             (
-                "Total {quantity} by {category}",
+                "Calculate the total {quantity} grouped by {category}",
                 {
                     "sql": "SELECT {category}, SUM({quantity}) FROM {table} GROUP BY {category}",
                     "mongodb": """[
                         {{ "$group": {{ 
                             "_id": "${category}",
                             "total": {{ "$sum": "${quantity}" }}
+                        }} }},
+                        {{ "$project": {{
+                            "_id": 0,
+                            "{category}": "$_id",
+                            "total": 1
                         }} }}
                     ]""",
                 },
             ),
             (
-                "Average {quantity} by {category}",
+                "Find the average {quantity} for each {category}",
                 {
                     "sql": "SELECT {category}, AVG({quantity}) FROM {table} GROUP BY {category}",
                     "mongodb": """[
                         {{ "$group": {{ 
                             "_id": "${category}",
                             "average": {{ "$avg": "${quantity}" }}
+                        }} }},
+                        {{ "$project": {{
+                            "_id": 0,
+                            "{category}": "$_id",
+                            "average": 1
                         }} }}
                     ]""",
                 },
             ),
             (
-                "Count by {category}",
+                "Count the number of records for each {category}",
                 {
                     "sql": "SELECT {category}, COUNT(*) as count FROM {table} GROUP BY {category}",
                     "mongodb": """[
                         {{ "$group": {{ 
                             "_id": "${category}",
                             "count": {{ "$sum": 1 }}
+                        }} }},
+                        {{ "$project": {{
+                            "_id": 0,
+                            "{category}": "$_id",
+                            "count": 1
                         }} }}
                     ]""",
                 },
             ),
             (
-                "Top {n} {quantity}",
+                "Show the top {n} records sorted by {quantity} in descending order",
                 {
                     "sql": "SELECT * FROM {table} ORDER BY {quantity} DESC LIMIT {n}",
                     "mongodb": """[
                         {{ "$sort": {{ "{quantity}": -1 }} }},
-                        {{ "$limit": {n} }}
+                        {{ "$limit": {n} }},
+                        {{ "$project": {{
+                            "_id": 0
+                        }} }}
                     ]""",
                 },
             ),
             (
-                "Filter {column} {condition}",
+                "Filter records where {quantity} matches specific {condition}",
                 {
-                    "sql": "SELECT * FROM {table} WHERE {column} {condition}",
-                    "mongodb": """{{ "{column}": {condition} }}""",
+                    "sql": "SELECT * FROM {table} WHERE {quantity} {condition}",
+                    "mongodb": """[
+                        {{ "$match": {{ "{quantity}": {condition} }} }},
+                        {{ "$project": {{
+                            "_id": 0
+                        }} }}
+                    ]""",
                 },
             ),
             (
-                "Join {table1} with {table2}",
+                "Group by {category} and filter groups where {quantity} meets {condition}",
                 {
-                    "sql": """SELECT {select_cols} 
-                             FROM {table1} 
-                             INNER JOIN {table2} 
-                             ON {table1}.{join_key1} = {table2}.{join_key2}""",
+                    "sql": """SELECT {category}, SUM({quantity}) as total FROM {table} GROUP BY {category} HAVING total {condition}""",
                     "mongodb": """[
-                        {{ "$lookup": {{
-                            "from": "{table2}",
-                            "localField": "{join_key1}",
-                            "foreignField": "{join_key2}",
-                            "as": "{table2}_data"
+                        {{ "$group": {{ 
+                            "_id": "${category}",
+                            "total": {{ "$sum": "${quantity}" }}
                         }} }},
-                        {{ "$unwind": "${table2}_data" }}
+                        {{ "$match": {{
+                            "total": {condition}
+                        }} }},
+                        {{ "$project": {{
+                            "_id": 0,
+                            "{category}": "$_id",
+                            "total": 1
+                        }} }}
+                    ]""",
+                },
+            ),
+            (
+                "Select specific columns {columns} from {table}",
+                {
+                    "sql": "SELECT {columns} FROM {table}",
+                    "mongodb": """[
+                        {{ "$project": {{ 
+                            "_id": 0,
+                            {columns_projection}
+                        }} }}
                     ]""",
                 },
             ),
@@ -89,50 +129,166 @@ class QueryGeneratorService:
         table_name: str,
         columns: List[str],
         db_type: str = "sql",
+        database_name: str = None,
         available_tables: Optional[Dict[str, List[str]]] = None,
-    ) -> List[Dict[str, str]]:
+        construct: Optional[str] = None,
+    ):
+        logger = logging.getLogger(__name__)
+        logger.info(f"Generating sample queries for table: {table_name}")
+        logger.info(
+            f"Input parameters - columns: {columns}, db_type: {db_type}, database_name: {database_name}, construct: {construct}"
+        )
+
         queries = []
         db_type_enum = (
             DatabaseType.SQL if db_type.lower() == "mysql" else DatabaseType.MONGODB
         )
 
-        for pattern, query_templates in self.query_patterns:
+        # Filter patterns based on construct if specified
+        patterns = self._filter_patterns_by_construct(construct) if construct else self.query_patterns
+
+        for pattern, query_templates in patterns:
             try:
-                # Skip join pattern if we don't have enough tables
-                if "join" in pattern.lower():
-                    if not available_tables or len(available_tables) < 2:
-                        continue
+                logger.info(f"Processing pattern: {pattern}")
 
                 query = self._fill_query_template(
                     query_templates[db_type_enum.value],
                     table_name,
                     columns,
                     db_type_enum,
+                    database_name,
                     available_tables,
                 )
-                nl_query = self._fill_nl_template(pattern, columns, available_tables)
+                nl_query = self._fill_nl_template(
+                    pattern, columns, table_name, available_tables
+                )
 
                 if query and nl_query:
                     queries.append(
                         {"natural_language": nl_query, f"{db_type}_query": query}
                     )
+                else:
+                    logger.warning(
+                        f"Failed to generate query or nl_query for pattern: {pattern}"
+                    )
+
             except Exception as e:
-                print(f"Error generating query for pattern {pattern}: {str(e)}")
+                logger.error(
+                    f"Error generating query for pattern {pattern}: {str(e)}",
+                    exc_info=True,
+                )
                 continue
 
-        return queries[:5]  # Return only 5 sample queries
+        return queries
 
-    def _get_column_types(self, columns: List[str]) -> Tuple[List[str], List[str]]:
-        numeric_cols = [
-            col
-            for col in columns
-            if any(
-                suffix in col.lower()
-                for suffix in ("amount", "qty", "price", "num", "count", "total")
-            )
+    def _filter_patterns_by_construct(self, construct: str) -> List[Tuple[str, Dict[str, str]]]:
+        """
+        Filter query patterns based on the specified construct.
+        
+        Args:
+            construct: The SQL construct to filter by (e.g., 'group by', 'order by', etc.)
+        
+        Returns:
+            List of matching query patterns
+        """
+        if not construct or construct.lower() == 'all':
+            return self.query_patterns
+
+        construct = construct.lower()
+        
+        # Map constructs to their corresponding patterns
+        construct_patterns = {
+            'group by with aggregation': [
+                "Calculate the total {quantity} grouped by {category}",
+                "Find the average {quantity} for each {category}",
+            ],
+            'group by with count': [
+                "Count the number of records for each {category}",
+            ],
+            'order by with limit': [
+                "Show the top {n} records sorted by {quantity} in descending order",
+            ],
+            'where clause': [
+                "Filter records where {quantity} matches specific {condition}",
+            ],
+            'having clause': [
+                "Group by {category} and filter groups where {quantity} meets {condition}",
+            ],
+            'select columns': [
+                "Select specific columns {columns} from {table}",
+            ],
+        }
+
+        if construct not in construct_patterns:
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Unknown construct: {construct}, returning all patterns")
+            return self.query_patterns
+
+        # Get the matching pattern descriptions
+        matching_descriptions = construct_patterns[construct]
+        
+        # Filter query patterns based on matching descriptions
+        filtered_patterns = [
+            (desc, temp) for desc, temp in self.query_patterns 
+            if desc in matching_descriptions
         ]
-        categorical_cols = [col for col in columns if col not in numeric_cols]
-        return numeric_cols, categorical_cols
+
+        logger = logging.getLogger(__name__)
+        logger.info(f"Filtered patterns for construct '{construct}': {[p[0] for p in filtered_patterns]}")
+        
+        return filtered_patterns
+
+    def _get_column_types(
+        self, columns: List[str], table_name: str, database_name: str
+    ) -> Tuple[List[str], List[str]]:
+        logger = logging.getLogger(__name__)
+
+        try:
+            if hasattr(self, "mysql_manager"):
+                numeric_types = {"int", "decimal", "float", "double", "numeric"}
+                column_info = self.mysql_manager.get_columns(table_name, database_name)
+
+                numeric_cols = []
+                categorical_cols = []
+
+                for col in column_info:
+                    col_type = str(col["type"]).lower()
+                    if any(num_type in col_type for num_type in numeric_types):
+                        numeric_cols.append(col["name"])
+                    else:
+                        categorical_cols.append(col["name"])
+
+            elif hasattr(self, "mongo_manager"):
+
+                sample_data = self.mongo_manager.get_sample_data(
+                    table_name, database_name
+                )
+                if sample_data:
+                    numeric_cols = []
+                    categorical_cols = []
+
+                    # Use the first document to infer types
+                    first_doc = sample_data[0]
+                    for col in columns:
+                        if col in first_doc:
+                            value = first_doc[col]
+                            if isinstance(value, (int, float)):
+                                numeric_cols.append(col)
+                            else:
+                                categorical_cols.append(col)
+                else:
+                    logger.warning("No sample data available for type inference")
+                    return columns, columns
+            else:
+                logger.warning("No database manager available for type inference")
+                return columns, columns
+
+            return numeric_cols, categorical_cols
+
+        except Exception as e:
+            logger.error(f"Error in column type inference: {str(e)}", exc_info=True)
+            # Fallback to treating all columns as both numeric and categorical
+            return columns, columns
 
     def _fill_query_template(
         self,
@@ -140,142 +296,99 @@ class QueryGeneratorService:
         table_name: str,
         columns: List[str],
         db_type: DatabaseType,
+        database_name: str,
         available_tables: Optional[Dict[str, List[str]]] = None,
     ) -> Optional[str]:
         try:
-            numeric_cols, categorical_cols = self._get_column_types(columns)
+            logger = logging.getLogger(__name__)
+            numeric_cols, categorical_cols = self._get_column_types(
+                columns, table_name, database_name
+            )
+            logger.info(f"Numeric columns: {numeric_cols}, Categorical columns: {categorical_cols}")
 
             if not numeric_cols:
                 numeric_cols = columns
             if not categorical_cols:
                 categorical_cols = columns
 
-            # Handle join queries
-            if "join" in template.lower() and available_tables:
-                return self._generate_join_query(table_name, available_tables, db_type)
+            # Handle specific columns selection pattern
+            if "{columns}" in template:
+                selected_columns = random.sample(
+                    columns, min(random.randint(2, 4), len(columns))
+                )
+                if db_type == DatabaseType.SQL:
+                    columns_str = ", ".join(selected_columns)
+                    self.selected_columns = selected_columns
+                    return template.format(table=table_name, columns=columns_str)
+                else:  # MongoDB
+                    columns_projection = ", ".join(
+                        f'"{col}": 1' for col in selected_columns
+                    )
+                    self.selected_columns = selected_columns
+                    return template.format(columns_projection=columns_projection)
 
-            # Store selected columns to ensure consistency
+            # Handle other patterns
             self.selected_quantity = random.choice(numeric_cols)
             self.selected_category = random.choice(categorical_cols)
-            self.selected_column = random.choice(columns)
             self.selected_n = random.randint(3, 10)
             self.selected_condition = self._generate_condition(
-                self.selected_column, numeric_cols, db_type
+                self.selected_quantity, numeric_cols, db_type
+            )
+            self.selected_having_condition = self._generate_having_condition(
+                self.selected_quantity, db_type
             )
 
             return template.format(
                 table=table_name,
                 category=self.selected_category,
                 quantity=self.selected_quantity,
-                column=self.selected_column,
                 condition=self.selected_condition,
                 n=self.selected_n,
+                having_condition=self.selected_having_condition,
             )
         except Exception as e:
-            print(f"Error in _fill_query_template: {str(e)}")
+            logger.error(f"Error in _fill_query_template: {str(e)}", exc_info=True)
             return None
 
     def _fill_nl_template(
         self,
         template: str,
         columns: List[str],
+        table_name: str,
         available_tables: Optional[Dict[str, List[str]]] = None,
     ) -> Optional[str]:
         try:
-            # Handle join queries
-            if "join" in template.lower() and available_tables:
-                possible_tables = [t for t in available_tables.keys()]
-                if len(possible_tables) >= 2:
-                    table1 = possible_tables[0]
-                    table2 = possible_tables[1]
-                    return template.format(table1=table1, table2=table2)
+            logger = logging.getLogger(__name__)
+
+            # Handle specific columns selection pattern
+            if "{columns}" in template:
+                if hasattr(self, "selected_columns"):
+                    columns_str = ", ".join(self.selected_columns)
+                    return template.format(
+                        table=table_name,
+                        columns=columns_str,
+                    )
+                logger.warning(
+                    "No selected columns found for columns selection pattern"
+                )
                 return None
 
-            # Use the same selected columns from _fill_query_template
+            # Use generated conditions and placeholders consistently
             return template.format(
                 category=self.selected_category,
                 quantity=self.selected_quantity,
-                column=self.selected_column,
                 n=self.selected_n,
-                condition="equals sample_value",
+                condition=self.selected_condition,
             )
         except Exception as e:
-            print(f"Error in _fill_nl_template: {str(e)}")
+            logger.error(f"Error in _fill_nl_template: {str(e)}", exc_info=True)
             return None
-
-    def _generate_join_query(
-        self, table1: str, available_tables: Dict[str, List[str]], db_type: DatabaseType
-    ) -> Optional[str]:
-        try:
-            if len(available_tables) < 2:
-                return None
-
-            # Get a random second table different from the first
-            possible_tables = [t for t in available_tables.keys() if t != table1]
-            if not possible_tables:
-                return None
-
-            table2 = random.choice(possible_tables)
-
-            # Find potential join keys
-            table1_cols = available_tables[table1]
-            table2_cols = available_tables[table2]
-
-            join_candidates = self._find_join_candidates(table1_cols, table2_cols)
-            if not join_candidates:
-                return None
-
-            join_key1, join_key2 = random.choice(join_candidates)
-
-            if db_type == DatabaseType.SQL:
-                select_cols = f"{table1}.*, {table2}.*"
-                return self.query_patterns[-1][1]["sql"].format(
-                    select_cols=select_cols,
-                    table1=table1,
-                    table2=table2,
-                    join_key1=join_key1,
-                    join_key2=join_key2,
-                )
-            else:  # MongoDB
-                return self.query_patterns[-1][1]["mongodb"].format(
-                    table2=table2, join_key1=join_key1, join_key2=join_key2
-                )
-        except Exception as e:
-            print(f"Error in _generate_join_query: {str(e)}")
-            return None
-
-    def _find_join_candidates(
-        self, cols1: List[str], cols2: List[str]
-    ) -> List[Tuple[str, str]]:
-        join_pairs = []
-        common_id_suffixes = ["id", "_id", "key", "_key", "code", "_code"]
-
-        for col1 in cols1:
-            col1_lower = col1.lower()
-            for col2 in cols2:
-                col2_lower = col2.lower()
-
-                # Check for exact matches
-                if col1_lower == col2_lower:
-                    join_pairs.append((col1, col2))
-                    continue
-
-                # Check for common ID patterns
-                for suffix in common_id_suffixes:
-                    if col1_lower.endswith(suffix) and col2_lower.endswith(suffix):
-                        prefix1 = col1_lower[: -len(suffix)]
-                        prefix2 = col2_lower[: -len(suffix)]
-                        if prefix1 in prefix2 or prefix2 in prefix1:
-                            join_pairs.append((col1, col2))
-                            break
-
-        return join_pairs
 
     def _generate_condition(
         self, column: str, numeric_cols: List[str], db_type: DatabaseType
     ) -> str:
         if column in numeric_cols:
-            value = random.randint(1, 1000)
+            value = random.randint(1, 100)
             operators = [">", "<", ">=", "<=", "="]
             op = random.choice(operators)
 
@@ -290,7 +403,22 @@ class QueryGeneratorService:
                 return f'{{ "{mongo_ops[op]}": {value} }}'
             return f"{op} {value}"
         else:
-            value = "'sample_value'"
+            value = random.randint(40, 50)
             if db_type == DatabaseType.MONGODB:
                 return value
             return f"= {value}"
+
+    def _generate_having_condition(self, column: str, db_type: DatabaseType) -> str:
+        value = random.randint(10, 200)
+        operators = [">", "<", ">=", "<="]
+        op = random.choice(operators)
+
+        if db_type == DatabaseType.MONGODB:
+            mongo_ops = {
+                ">": "$gt",
+                "<": "$lt",
+                ">=": "$gte",
+                "<=": "$lte",
+            }
+            return f'{{ "{mongo_ops[op]}": {value} }}'
+        return f"{op} {value}"

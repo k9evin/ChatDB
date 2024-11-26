@@ -22,16 +22,11 @@ mysql_manager = MySQLManager(settings.mysql_connection_string)
 mongo_manager = MongoManager(settings.mongo_connection_string)
 data_upload_service = DataUploadService(mysql_manager, mongo_manager)
 db_explorer_service = DBExplorerService(mysql_manager, mongo_manager)
-query_generator_service = QueryGeneratorService()
+query_generator_service = QueryGeneratorService(mysql_manager, mongo_manager)
 nlp_processor = NLPProcessor()
 
 logger = logging.getLogger(__name__)
-logger.info(f"MySQL connection string: {settings.mysql_connection_string}")
-
-
-@router.get("/")
-async def root():
-    return {"message": "Welcome to ChatDB"}
+logger.info(f"MySQL manager: {mysql_manager.base_connection_string}")
 
 
 class DatabaseUploadRequest(BaseModel):
@@ -95,11 +90,13 @@ async def get_sample_data(
 ):
     if db_type == "mysql":
         return db_explorer_service.get_mysql_sample_data(
-            table_name, database_name=database_name
+            table_name=table_name,
+            database_name=database_name
         )
     elif db_type == "mongodb":
         return db_explorer_service.get_mongo_sample_data(
-            table_name, database_name=database_name
+            collection_name=table_name,
+            database_name=database_name
         )
     else:
         raise HTTPException(status_code=400, detail="Invalid database type")
@@ -109,14 +106,14 @@ async def get_sample_data(
 async def get_sample_queries(
     db_type: str,
     table_name: str,
+    database_name: str,
     construct: Optional[str] = None,
-    database_name: Optional[str] = None,
 ):
     try:
         available_tables = db_explorer_service.get_all_tables_and_columns(
             db_type, database_name=database_name
         )
-        print(available_tables)
+        
         if db_type == "mysql":
             columns = db_explorer_service.get_mysql_columns(table_name, database_name)
         elif db_type == "mongodb":
@@ -124,24 +121,13 @@ async def get_sample_queries(
         else:
             raise HTTPException(status_code=400, detail="Invalid database type")
 
-        # If construct is specified, generate queries for that specific construct
-        if construct:
-            queries = nlp_processor.get_queries_by_construct(
-                construct, table_name, columns, DatabaseType(db_type), available_tables
-            )
-            return {
-                "sample_queries": [
-                    {
-                        "natural_language": f"Query using {construct}",
-                        f"{db_type}_query": query,
-                    }
-                    for query in queries
-                ]
-            }
-
-        # Otherwise, generate a variety of sample queries
         queries = query_generator_service.generate_sample_queries(
-            table_name, columns, db_type=db_type, available_tables=available_tables
+            table_name=table_name,
+            columns=columns,
+            db_type=db_type,
+            database_name=database_name,
+            available_tables=available_tables,
+            construct=construct
         )
         return {"sample_queries": queries}
     except Exception as e:

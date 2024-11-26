@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -113,61 +114,72 @@ export function FileUpload() {
   };
 
   return (
-    <div className="mb-8">
-      <h2 className="text-2xl font-semibold mb-4">Upload Data File</h2>
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="data-file">
-            Select File ({dbType === 'mysql' ? 'CSV only' : 'JSON only'})
-          </Label>
-          <Input
-            id="data-file"
-            type="file"
-            accept={dbType === 'mysql' ? '.csv' : '.json'}
-            onChange={handleFileChange}
-          />
+    <Card>
+      <CardHeader>
+        <CardTitle>Upload Data File</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="db-type">Database Type</Label>
+            <Select value={dbType} onValueChange={setDbType}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select database type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mysql">MySQL</SelectItem>
+                <SelectItem value="mongodb">MongoDB</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="data-file">
+              Select File ({dbType === 'mysql' ? 'CSV only' : 'JSON only'})
+            </Label>
+            <Input
+              id="data-file"
+              type="file"
+              accept={dbType === 'mysql' ? '.csv' : '.json'}
+              onChange={handleFileChange}
+            />
+          </div>
+          <div>
+            <Label htmlFor="database-name">
+              Database Name
+            </Label>
+            <Input
+              id="database-name"
+              value={databaseName}
+              onChange={(e) => setDatabaseName(e.target.value)}
+              placeholder={`Enter ${
+                dbType === 'mysql' ? 'database' : 'database'
+              } name`}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="table-name">
+              {dbType === 'mysql' ? 'Table Name' : 'Collection Name'}
+            </Label>
+            <Input
+              id="table-name"
+              type="text"
+              value={tableName}
+              onChange={(e) => setTableName(e.target.value)}
+              placeholder={`Enter ${
+                dbType === 'mysql' ? 'table' : 'collection'
+              } name`}
+            />
+          </div>
+          <Button
+            onClick={handleUpload}
+            disabled={!file || !tableName || !databaseName}
+            className="w-full"
+          >
+            Upload and Process
+          </Button>
         </div>
-        <div>
-          <Label htmlFor="db-type">Database Type</Label>
-          <Select value={dbType} onValueChange={setDbType}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select database type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="mysql">MySQL</SelectItem>
-              <SelectItem value="mongodb">MongoDB</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="database-name" className="flex items-center gap-1">
-            Database Name
-            <span className="text-red-500">*</span>
-          </Label>
-          <Input
-            id="database-name"
-            value={databaseName}
-            onChange={(e) => setDatabaseName(e.target.value)}
-            placeholder={`Enter ${dbType === 'mysql' ? 'database' : 'database'} name`}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="table-name">
-            {dbType === 'mysql' ? 'Table Name' : 'Collection Name'}
-          </Label>
-          <Input
-            id="table-name"
-            type="text"
-            value={tableName}
-            onChange={(e) => setTableName(e.target.value)}
-            placeholder={`Enter ${dbType === 'mysql' ? 'table' : 'collection'} name`}
-          />
-        </div>
-        <Button onClick={handleUpload} disabled={!file || !tableName || !databaseName}>
-          Upload and Process
-        </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

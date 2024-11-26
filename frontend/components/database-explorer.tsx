@@ -35,9 +35,13 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
   const [sampleQueries, setSampleQueries] = useState<any[]>([]);
   const [naturalLanguageQuery, setNaturalLanguageQuery] = useState<string>('');
   const [generatedQuery, setGeneratedQuery] = useState<string>('');
-  const [queryResults, setQueryResults] = useState<SQLResult[] | MongoResult[]>([]);
+  const [queryResults, setQueryResults] = useState<SQLResult[] | MongoResult[]>(
+    []
+  );
   const { toast } = useToast();
-  const [customDatabaseName, setCustomDatabaseName] = useState<string>(databaseName || '');
+  const [customDatabaseName, setCustomDatabaseName] = useState<string>(
+    databaseName || ''
+  );
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [selectedConstruct, setSelectedConstruct] = useState<string>('');
 
@@ -97,9 +101,17 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
 
   const fetchSampleQueries = async () => {
     try {
+      const queryParams = new URLSearchParams({
+        db_type: dbType,
+        table_name: selectedTable,
+        database_name: customDatabaseName,
+        ...(selectedConstruct && selectedConstruct !== 'all' && { construct: selectedConstruct })
+      });
+
       const response = await fetch(
-        `${config.backendUrl}${config.api.sampleQueries}?db_type=${dbType}&table_name=${selectedTable}&database_name=${customDatabaseName}`
+        `${config.backendUrl}${config.api.sampleQueries}?${queryParams}`
       );
+
       if (response.ok) {
         const data = await response.json();
         setSampleQueries(data.sample_queries);
@@ -117,18 +129,21 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
 
   const handleNaturalLanguageQuery = async () => {
     try {
-      const response = await fetch(`${config.backendUrl}${config.api.naturalLanguageQuery}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: naturalLanguageQuery,
-          db_type: dbType,
-          table_name: selectedTable,
-          database_name: customDatabaseName,
-        }),
-      });
+      const response = await fetch(
+        `${config.backendUrl}${config.api.naturalLanguageQuery}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: naturalLanguageQuery,
+            db_type: dbType,
+            table_name: selectedTable,
+            database_name: customDatabaseName,
+          }),
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -144,7 +159,8 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
         const errorData = await response.json();
         toast({
           title: 'Error',
-          description: errorData.detail || 'Failed to process natural language query',
+          description:
+            errorData.detail || 'Failed to process natural language query',
           variant: 'destructive',
         });
       }
@@ -160,16 +176,19 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
 
   const executeQuery = async (query: string) => {
     try {
-      const response = await fetch(`${config.backendUrl}${config.api.executeQuery}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query,
-          db_type: dbType,
-          table_name: selectedTable,
-          database_name: customDatabaseName,
-        }),
-      });
+      const response = await fetch(
+        `${config.backendUrl}${config.api.executeQuery}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query,
+            db_type: dbType,
+            table_name: selectedTable,
+            database_name: customDatabaseName,
+          }),
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -211,8 +230,13 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
               {sampleData.map((row, i) => (
                 <tr key={i}>
                   {Object.values(row).map((value: any, j) => (
-                    <td key={j} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                    <td
+                      key={j}
+                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                    >
+                      {typeof value === 'object'
+                        ? JSON.stringify(value)
+                        : String(value)}
                     </td>
                   ))}
                 </tr>
@@ -259,13 +283,14 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
         db_type: dbType,
         table_name: selectedTable,
         ...(customDatabaseName && { database_name: customDatabaseName }),
-        ...(selectedConstruct && selectedConstruct !== 'all' && { construct: selectedConstruct })
+        ...(selectedConstruct &&
+          selectedConstruct !== 'all' && { construct: selectedConstruct }),
       });
 
       const response = await fetch(
         `${config.backendUrl}${config.api.sampleQueries}?${queryParams}`
       );
-      
+
       if (response.ok) {
         const data = await response.json();
         setSampleQueries(data.sample_queries);
@@ -303,7 +328,10 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
             </div>
 
             <div>
-              <Label htmlFor="database-name" className="flex items-center gap-1">
+              <Label
+                htmlFor="database-name"
+                className="flex items-center gap-1"
+              >
                 Database Name
                 <span className="text-red-500">*</span>
               </Label>
@@ -312,10 +340,12 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
                   id="database-name"
                   value={customDatabaseName}
                   onChange={(e) => setCustomDatabaseName(e.target.value)}
-                  placeholder={`Enter ${dbType === 'mysql' ? 'database' : 'database'} name`}
+                  placeholder={`Enter ${
+                    dbType === 'mysql' ? 'database' : 'database'
+                  } name`}
                   className="flex-1"
                 />
-                <Button 
+                <Button
                   onClick={handleDatabaseSubmit}
                   disabled={!customDatabaseName || isSubmitting}
                 >
@@ -331,7 +361,11 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
                 </Label>
                 <Select value={selectedTable} onValueChange={setSelectedTable}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder={`Select ${dbType === 'mysql' ? 'table' : 'collection'}`} />
+                    <SelectValue
+                      placeholder={`Select ${
+                        dbType === 'mysql' ? 'table' : 'collection'
+                      }`}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {tables.map((table) => (
@@ -353,9 +387,7 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
             <CardHeader>
               <CardTitle>Sample Data</CardTitle>
             </CardHeader>
-            <CardContent>
-              {renderSampleData()}
-            </CardContent>
+            <CardContent>{renderSampleData()}</CardContent>
           </Card>
 
           <Card>
@@ -363,46 +395,77 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
               <CardTitle className="flex justify-between items-center">
                 <span>Sample Queries</span>
                 <div className="flex gap-2">
-                  <Select value={selectedConstruct} onValueChange={setSelectedConstruct}>
+                  <Select
+                    value={selectedConstruct}
+                    onValueChange={setSelectedConstruct}
+                  >
                     <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Select SQL construct" />
+                      <SelectValue placeholder="Select query type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Constructs</SelectItem>
-                      <SelectItem value="group by with aggregation">Group By with Aggregation</SelectItem>
-                      <SelectItem value="group by with count">Group By with Count</SelectItem>
-                      <SelectItem value="order by with limit">Order By with Limit</SelectItem>
-                      <SelectItem value="where clause">Where Clause</SelectItem>
-                      <SelectItem value="having clause">Having Clause</SelectItem>
-                      <SelectItem value="inner join">Inner Join</SelectItem>
+                      <SelectItem value="all">All Query Types</SelectItem>
+                      <SelectItem value="group by with aggregation">
+                        Group By with Sum/Avg
+                      </SelectItem>
+                      <SelectItem value="group by with count">
+                        Group By with Count
+                      </SelectItem>
+                      <SelectItem value="order by with limit">
+                        Order By with Limit
+                      </SelectItem>
+                      <SelectItem value="where clause">
+                        Where Clause
+                      </SelectItem>
+                      <SelectItem value="having clause">
+                        Having Clause
+                      </SelectItem>
+                      <SelectItem value="select columns">
+                        Select Specific Columns
+                      </SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button onClick={refreshSampleQueries} variant="outline" size="sm">
+                  <Button
+                    onClick={refreshSampleQueries}
+                    variant="outline"
+                    size="sm"
+                  >
                     Refresh
                   </Button>
                 </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-2">
-                {sampleQueries.map((query, index) => (
-                  <li key={index} className="bg-gray-100 p-2 rounded-md">
-                    <p className="font-semibold">{query.natural_language}</p>
-                    <pre className="text-sm mt-1">
-                      {dbType === 'mysql' ? query.mysql_query : query.mongodb_query}
-                    </pre>
-                    <Button
-                      onClick={() => executeQuery(
-                        dbType === 'mysql' ? query.mysql_query : query.mongodb_query
-                      )}
-                      className="mt-2"
-                      size="sm"
-                    >
-                      Execute
-                    </Button>
-                  </li>
-                ))}
-              </ul>
+              {sampleQueries.length > 0 ? (
+                <ul className="space-y-4">
+                  {sampleQueries.map((query, index) => (
+                    <li key={index} className="bg-gray-100 p-4 rounded-md">
+                      <p className="font-semibold text-gray-700">{query.natural_language}</p>
+                      <pre className="mt-2 p-2 bg-gray-50 rounded text-sm overflow-x-auto">
+                        {dbType === 'mysql'
+                          ? query.mysql_query
+                          : query.mongodb_query}
+                      </pre>
+                      <Button
+                        onClick={() =>
+                          executeQuery(
+                            dbType === 'mysql'
+                              ? query.mysql_query
+                              : query.mongodb_query
+                          )
+                        }
+                        className="mt-2"
+                        size="sm"
+                      >
+                        Execute
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500 text-center py-4">
+                  No queries available for the selected type
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -464,8 +527,13 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
                         {queryResults.map((row: any, i: number) => (
                           <tr key={i}>
                             {Object.values(row).map((value: any, j: number) => (
-                              <td key={j} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                              <td
+                                key={j}
+                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                              >
+                                {typeof value === 'object'
+                                  ? JSON.stringify(value)
+                                  : String(value)}
                               </td>
                             ))}
                           </tr>
@@ -478,7 +546,9 @@ export function DatabaseExplorer({ databaseName }: DatabaseExplorerProps) {
                 </div>
               ) : (
                 <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-                  {queryResults.length > 0 ? JSON.stringify(queryResults, null, 2) : 'No results yet'}
+                  {queryResults.length > 0
+                    ? JSON.stringify(queryResults, null, 2)
+                    : 'No results yet'}
                 </pre>
               )}
             </CardContent>

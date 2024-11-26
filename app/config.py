@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
-from functools import lru_cache
 
+import logging
+logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     # MySQL Configuration
@@ -30,9 +30,11 @@ class Settings(BaseSettings):
         return self.cors_origins.split(",")
 
 
-@lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    logger.info("Getting settings")
+    return Settings(_env_file='.env', _env_file_encoding='utf-8')
 
 
 settings = get_settings()
+logger.info(f"Settings: {settings}")
+

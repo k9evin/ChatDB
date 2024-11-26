@@ -22,45 +22,42 @@ class MongoManager:
         sample_doc = db[collection_name].find_one()
         if not sample_doc:
             return []
-        # Remove _id from fields list
         fields = list(sample_doc.keys())
-        if '_id' in fields:
-            fields.remove('_id')
+        if "_id" in fields:
+            fields.remove("_id")
         return fields
 
     def execute_query(
-        self, 
-        collection_name: str, 
-        query: Dict[str, Any], 
-        database_name: str
+        self, collection_name: str, query: Dict[str, Any], database_name: str
     ) -> List[Dict]:
         db = self.get_database(database_name)
         collection = db[collection_name]
-        
+
         # Check if the query is an aggregation pipeline
         if isinstance(query, list):
+            has_limit = any('$limit' in stage for stage in query)
+            if not has_limit:
+                query.append({'$limit': 100})
             results = list(collection.aggregate(query))
         else:
-            results = list(collection.find(query))
-            
-        # Clean results by removing ObjectId and handling non-JSON values
+            results = list(collection.find(query).limit(100))
         return self._clean_mongo_results(results)
 
     def _clean_mongo_results(self, results: List[Dict]) -> List[Dict]:
-        """Clean MongoDB results by removing ObjectId and handling non-JSON values"""
         cleaned_results = []
         for doc in results:
             doc_copy = doc.copy()
-            doc_copy.pop('_id', None)
+            doc_copy.pop("_id", None)
             # Handle non-JSON compliant values
             cleaned_doc = self._handle_non_json_values(doc_copy)
             cleaned_results.append(cleaned_doc)
         return cleaned_results
 
-    def _handle_non_json_values(self, obj: Any) -> Any:
-        """Recursively handle non-JSON compliant values"""
+    def _handle_non_json_values(self, obj):
         if isinstance(obj, dict):
-            return {key: self._handle_non_json_values(value) for key, value in obj.items()}
+            return {
+                key: self._handle_non_json_values(value) for key, value in obj.items()
+            }
         elif isinstance(obj, list):
             return [self._handle_non_json_values(item) for item in obj]
         elif isinstance(obj, float):
