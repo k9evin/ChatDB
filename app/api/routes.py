@@ -171,7 +171,6 @@ async def process_nl_query(request: NLQueryRequest):
                 request.table_name,
                 columns,
                 request.db_type,
-                available_tables,
             )
 
             logging.info(f"Generated query: {generated_query}")

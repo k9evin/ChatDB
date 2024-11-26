@@ -79,7 +79,7 @@ class QueryGeneratorService:
                 },
             ),
             (
-                "Filter records where {quantity} matches specific {condition}",
+                "Filter records where {quantity} is {condition}",
                 {
                     "sql": "SELECT * FROM {table} WHERE {quantity} {condition}",
                     "mongodb": """[
@@ -145,7 +145,11 @@ class QueryGeneratorService:
         )
 
         # Filter patterns based on construct if specified
-        patterns = self._filter_patterns_by_construct(construct) if construct else self.query_patterns
+        patterns = (
+            self._filter_patterns_by_construct(construct)
+            if construct
+            else self.query_patterns
+        )
 
         for pattern, query_templates in patterns:
             try:
@@ -181,40 +185,33 @@ class QueryGeneratorService:
 
         return queries
 
-    def _filter_patterns_by_construct(self, construct: str) -> List[Tuple[str, Dict[str, str]]]:
-        """
-        Filter query patterns based on the specified construct.
-        
-        Args:
-            construct: The SQL construct to filter by (e.g., 'group by', 'order by', etc.)
-        
-        Returns:
-            List of matching query patterns
-        """
-        if not construct or construct.lower() == 'all':
+    def _filter_patterns_by_construct(
+        self, construct: str
+    ) -> List[Tuple[str, Dict[str, str]]]:
+        if not construct or construct.lower() == "all":
             return self.query_patterns
 
         construct = construct.lower()
-        
+
         # Map constructs to their corresponding patterns
         construct_patterns = {
-            'group by with aggregation': [
+            "group by with aggregation": [
                 "Calculate the total {quantity} grouped by {category}",
                 "Find the average {quantity} for each {category}",
             ],
-            'group by with count': [
+            "group by with count": [
                 "Count the number of records for each {category}",
             ],
-            'order by with limit': [
+            "order by with limit": [
                 "Show the top {n} records sorted by {quantity} in descending order",
             ],
-            'where clause': [
-                "Filter records where {quantity} matches specific {condition}",
+            "where clause": [
+                "Filter records where {quantity} is {condition}",
             ],
-            'having clause': [
+            "having clause": [
                 "Group by {category} and filter groups where {quantity} meets {condition}",
             ],
-            'select columns': [
+            "select columns": [
                 "Select specific columns {columns} from {table}",
             ],
         }
@@ -226,16 +223,19 @@ class QueryGeneratorService:
 
         # Get the matching pattern descriptions
         matching_descriptions = construct_patterns[construct]
-        
+
         # Filter query patterns based on matching descriptions
         filtered_patterns = [
-            (desc, temp) for desc, temp in self.query_patterns 
+            (desc, temp)
+            for desc, temp in self.query_patterns
             if desc in matching_descriptions
         ]
 
         logger = logging.getLogger(__name__)
-        logger.info(f"Filtered patterns for construct '{construct}': {[p[0] for p in filtered_patterns]}")
-        
+        logger.info(
+            f"Filtered patterns for construct '{construct}': {[p[0] for p in filtered_patterns]}"
+        )
+
         return filtered_patterns
 
     def _get_column_types(
@@ -304,7 +304,9 @@ class QueryGeneratorService:
             numeric_cols, categorical_cols = self._get_column_types(
                 columns, table_name, database_name
             )
-            logger.info(f"Numeric columns: {numeric_cols}, Categorical columns: {categorical_cols}")
+            logger.info(
+                f"Numeric columns: {numeric_cols}, Categorical columns: {categorical_cols}"
+            )
 
             if not numeric_cols:
                 numeric_cols = columns
@@ -312,7 +314,7 @@ class QueryGeneratorService:
                 categorical_cols = columns
 
             # Handle specific columns selection pattern
-            if "{columns}" in template:
+            if "{columns}" in template or "{columns_projection}" in template:
                 selected_columns = random.sample(
                     columns, min(random.randint(2, 4), len(columns))
                 )
@@ -373,12 +375,49 @@ class QueryGeneratorService:
                 )
                 return None
 
+            # Format MongoDB condition for natural language display
+            condition = self.selected_condition
+            if isinstance(condition, str) and condition.startswith("{"):
+                try:
+                    # Extract operator and value from MongoDB condition
+                    import json
+
+                    condition_dict = json.loads(condition.replace("'", '"'))
+                    operator = list(condition_dict.values())[
+                        0
+                    ]  # Get first operator (e.g., "$lt")
+                    value = list(operator.values())[0]  # Get the value
+
+                    # Convert MongoDB operators to readable format
+                    operator_map = {
+                        "$lt": "less than",
+                        "$lte": "less than or equal to",
+                        "$gt": "greater than",
+                        "$gte": "greater than or equal to",
+                        "$eq": "equal to",
+                        "$ne": "not equal to",
+                    }
+                    operator_key = list(operator.keys())[
+                        0
+                    ]  # Get the operator key (e.g., "$lt")
+                    readable_operator = operator_map.get(operator_key, "equals")
+                    condition = f"{readable_operator} {value}"
+                except (
+                    json.JSONDecodeError,
+                    IndexError,
+                    KeyError,
+                    AttributeError,
+                ) as e:
+                    logger.warning(f"Failed to parse MongoDB condition: {e}")
+                    # Fall back to original condition if parsing fails
+                    pass
+
             # Use generated conditions and placeholders consistently
             return template.format(
                 category=self.selected_category,
                 quantity=self.selected_quantity,
                 n=self.selected_n,
-                condition=self.selected_condition,
+                condition=condition,
             )
         except Exception as e:
             logger.error(f"Error in _fill_nl_template: {str(e)}", exc_info=True)

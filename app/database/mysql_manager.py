@@ -40,7 +40,7 @@ class MySQLManager:
     def execute_query(self, query: str, database_name: str) -> List[Dict]:
         query = query.strip()
         if 'LIMIT' not in query.upper():
-            query = f"{query} LIMIT 100"
+            query = f"{query} LIMIT 30"
         
         with self.get_session(database_name) as session:
             result = session.execute(query)

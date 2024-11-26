@@ -70,14 +70,34 @@ class NLPProcessor:
                     r".*?(?:calculate|find|get|show).*?(?:sum|total|average|avg|mean)\s+(?:of\s+)?(\w+).*?(?:by|per|for\s+each)\s+(\w+)",
                 ],
                 "mysql_template": "SELECT {group_by}, {agg_func}({aggregate}) FROM {table} GROUP BY {group_by}",
-                "mongodb_template": '[{"$group": {"_id": "${group_by}", "result": {"${agg_func}": "${aggregate}"}}}]',
+                "mongodb_template": """[
+                    { "$group": { 
+                        "_id": "${group_by}",
+                        "result": { "${agg_func}": "${aggregate}" }
+                    }},
+                    { "$project": {
+                        "_id": 0,
+                        "{group_by}": "$_id",
+                        "result": 1
+                    }}
+                ]""",
             },
             "group by with count": {
                 "patterns": [
                     r".*?(?:count|number\s+of|how\s+many)\s+(\w+).*?(?:by|per|for\s+each)\s+(\w+)",
                 ],
                 "mysql_template": "SELECT {group_by}, COUNT(*) as count FROM {table} GROUP BY {group_by}",
-                "mongodb_template": '[{"$group": {"_id": "${group_by}", "count": {"$sum": 1}}}]',
+                "mongodb_template": """[
+                    { "$group": { 
+                        "_id": "${group_by}",
+                        "count": { "$sum": 1 }
+                    }},
+                    { "$project": {
+                        "_id": 0,
+                        "{group_by}": "$_id",
+                        "count": 1
+                    }}
+                ]""",
             },
             "order by with limit": {
                 "patterns": [
@@ -85,7 +105,13 @@ class NLPProcessor:
                     r".*?(?:order|sort)\s+(?:by\s+)?(\w+).*?(?:top|first|limit)\s+(\d+)",
                 ],
                 "mysql_template": "SELECT * FROM {table} ORDER BY {order_by} DESC LIMIT {limit}",
-                "mongodb_template": '[{"$sort": {"{order_by}": -1}}, {"$limit": {limit}}]',
+                "mongodb_template": """[
+                    { "$sort": { "{order_by}": -1 }},
+                    { "$limit": {limit} },
+                    { "$project": {
+                        "_id": 0
+                    }}
+                ]""",
             },
             "where clause": {
                 "patterns": [
@@ -95,7 +121,12 @@ class NLPProcessor:
                     r".*?with\s+(\w+).*?(?:is|equals?|greater\s+than|less\s+than)\s*(\d+)",
                 ],
                 "mysql_template": "SELECT * FROM {table} WHERE {column} {operator} {value}",
-                "mongodb_template": '{"${column}": {"${operator}": {value}}}',
+                "mongodb_template": """[
+                    { "$match": { "{column}": { "${operator}": {value} }}},
+                    { "$project": {
+                        "_id": 0
+                    }}
+                ]""",
             },
             "having clause": {
                 "patterns": [
@@ -103,7 +134,20 @@ class NLPProcessor:
                     r".*?groups?\s+of\s+(\w+).*?(?:having|where).*?(?:total|sum|count)\s+(?:of\s+)?(\w+).*?(?:>|>=|<|<=|=)\s*(\d+)",
                 ],
                 "mysql_template": "SELECT {group_by}, SUM({aggregate}) as total FROM {table} GROUP BY {group_by} HAVING total {operator} {value}",
-                "mongodb_template": '[{"$group": {"_id": "${group_by}", "total": {"$sum": "${aggregate}"}}, {"$match": {"total": {"${operator}": {value}}}}]',
+                "mongodb_template": """[
+                    { "$group": { 
+                        "_id": "${group_by}",
+                        "total": { "$sum": "${aggregate}" }
+                    }},
+                    { "$match": {
+                        "total": { "${operator}": {value} }
+                    }},
+                    { "$project": {
+                        "_id": 0,
+                        "{group_by}": "$_id",
+                        "total": 1
+                    }}
+                ]""",
             },
             "select columns": {
                 "patterns": [
@@ -111,12 +155,16 @@ class NLPProcessor:
                     r".*?(?:columns?|fields?)\s+(\w+(?:\s*,\s*\w+)*)",
                 ],
                 "mysql_template": "SELECT {columns} FROM {table}",
-                "mongodb_template": '[{"$project": {columns_projection}}]',
+                "mongodb_template": """[
+                    { "$project": {
+                        "_id": 0,
+                        {columns_projection}
+                    }}
+                ]""",
             },
         }
 
     def process_query(self, query: str) -> str:
-        """Process the natural language query by removing stopwords (except important ones) and lemmatizing"""
         logger.info(f"Processing raw query: {query}")
         self.current_query = query
         tokens = word_tokenize(query.lower())
@@ -142,10 +190,7 @@ class NLPProcessor:
         return None
 
     def extract_query_components(self, query: str, pattern_name: str) -> Dict[str, str]:
-        """Extract components from the query based on the pattern name"""
-        logger.info(
-            f"Extracting components for pattern {pattern_name} from query: {query}"
-        )
+        logger.info(f"Extracting components for pattern {pattern_name} from query: {query}")
 
         if pattern_name not in self.query_patterns:
             logger.error(f"Unknown pattern: {pattern_name}")
@@ -160,9 +205,9 @@ class NLPProcessor:
                 try:
                     if pattern_name == "group by with aggregation":
                         agg_func = (
-                            "SUM"
+                            "sum"
                             if any(w in query.lower() for w in ["sum", "total"])
-                            else "AVG"
+                            else "avg"
                         )
                         components = {
                             "aggregate": match.group(1),
@@ -215,9 +260,7 @@ class NLPProcessor:
         table_name: str,
         columns: List[str],
         db_type: str,
-        available_tables: Dict[str, List[str]],
     ) -> str:
-        """Generate a database query based on the matched pattern and table schema"""
         logger.info(f"Generating query for pattern: {pattern}")
 
         if pattern not in self.query_patterns:
@@ -266,8 +309,9 @@ class NLPProcessor:
                     columns_dict = {
                         col.strip(): 1 for col in components["columns"].split(",")
                     }
+                    projection_str = ", ".join(f'"{k}": {v}' for k, v in columns_dict.items())
                     query = query.replace(
-                        "{columns_projection}", json.dumps(columns_dict)
+                        "{columns_projection}", projection_str
                     )
 
             logger.info(f"Generated query: {query}")
@@ -279,7 +323,6 @@ class NLPProcessor:
             raise ValueError(error_msg)
 
     def _extract_operator(self, operator_text: str) -> str:
-        """Convert natural language operators to SQL/MongoDB operators"""
         operator_map = {
             ">": ">",
             "greater than": ">",

@@ -15,11 +15,32 @@ import { Separator } from '@/components/ui/separator';
 import { DataTable } from './chat/data-table';
 import { SampleQueriesList } from './chat/sample-queries-list';
 import { GeneratedQuery } from './chat/generated-query';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 
 interface Message {
   type: 'user' | 'assistant';
   content: string | React.ReactNode;
 }
+
+interface Construct {
+  label: string;
+  value: string;
+}
+
+const CONSTRUCTS: Construct[] = [
+  { label: "Group By with Aggregation", value: "group by with aggregation" },
+  { label: "Group By with Count", value: "group by with count" },
+  { label: "Order By with Limit", value: "order by with limit" },
+  { label: "Where Clause", value: "where clause" },
+  { label: "Having Clause", value: "having clause" },
+  { label: "Select Columns", value: "select columns" },
+];
 
 export function ChatLayout() {
   const { dbType, selectedTable, databaseName } = useDatabase();
@@ -148,7 +169,7 @@ export function ChatLayout() {
     }
   };
 
-  const handleGenerateSampleQueries = async (quickAction: boolean = true) => {
+  const handleGenerateSampleQueries = async (quickAction: boolean = true, construct?: string) => {
     if (!selectedTable || !databaseName) {
       toast({
         title: 'Error',
@@ -158,13 +179,22 @@ export function ChatLayout() {
       return;
     }
     if (quickAction) {
-      const userMessage = "Generate sample queries for the current table";
+      const userMessage = construct 
+        ? `Generate sample queries for ${construct}`
+        : "Generate sample queries for the current table";
       setMessages(prev => [...prev, { type: 'user', content: userMessage }]);
     }
 
     try {
+      const queryParams = new URLSearchParams({
+        db_type: dbType,
+        table_name: selectedTable,
+        database_name: databaseName,
+        ...(construct && { construct }),
+      });
+
       const response = await fetch(
-        `${config.backendUrl}${config.api.sampleQueries}?db_type=${dbType}&table_name=${selectedTable}&database_name=${databaseName}`
+        `${config.backendUrl}${config.api.sampleQueries}?${queryParams}`
       );
 
       if (response.ok) {
@@ -173,7 +203,11 @@ export function ChatLayout() {
           type: 'assistant',
           content: (
             <div>
-              <p className="mb-4">Here are some sample queries you can try:</p>
+              <p className="mb-4">
+                {construct 
+                  ? `Here are sample queries for ${construct}:`
+                  : 'Here are some sample queries you can try:'}
+              </p>
               <SampleQueriesList 
                 queries={data.sample_queries} 
                 dbType={dbType} 
@@ -269,7 +303,7 @@ export function ChatLayout() {
                     message.type === 'user' ? 'flex-row-reverse' : ''
                   }`}
                 >
-                  <Avatar className="w-8 h-8">
+                  <Avatar className="w-12 h-12">
                     <AvatarImage
                       src={
                         message.type === 'assistant'
@@ -319,6 +353,23 @@ export function ChatLayout() {
           >
             Generate Sample Queries
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Generate By Construct <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {CONSTRUCTS.map((construct) => (
+                <DropdownMenuItem
+                  key={construct.value}
+                  onClick={() => handleGenerateSampleQueries(true, construct.value)}
+                >
+                  {construct.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Input Area */}

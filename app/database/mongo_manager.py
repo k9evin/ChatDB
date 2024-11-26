@@ -37,10 +37,10 @@ class MongoManager:
         if isinstance(query, list):
             has_limit = any('$limit' in stage for stage in query)
             if not has_limit:
-                query.append({'$limit': 100})
+                query.append({'$limit': 30})
             results = list(collection.aggregate(query))
         else:
-            results = list(collection.find(query).limit(100))
+            results = list(collection.find(query).limit(30))
         return self._clean_mongo_results(results)
 
     def _clean_mongo_results(self, results: List[Dict]) -> List[Dict]:
