@@ -14,8 +14,13 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import config from '@/config';
+import { cn } from '@/lib/utils';
 
-export function FileUpload() {
+interface FileUploadProps {
+  className?: string;
+}
+
+export function FileUpload({ className }: FileUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [dbType, setDbType] = useState<string>('mysql');
   const [tableName, setTableName] = useState<string>('');
@@ -77,6 +82,7 @@ export function FileUpload() {
           toast({
             title: 'Success',
             description: data.message,
+            variant: 'success',
           });
         } catch (jsonError) {
           console.error('Error parsing JSON response:', jsonError);
@@ -114,7 +120,7 @@ export function FileUpload() {
   };
 
   return (
-    <Card>
+    <Card className={cn("shadow-none", className)}>
       <CardHeader>
         <CardTitle>Upload Data File</CardTitle>
       </CardHeader>
