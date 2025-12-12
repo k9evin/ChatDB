@@ -1,51 +1,66 @@
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
 interface DataTableProps {
   data: any[];
   dbType: string;
 }
 
 export function DataTable({ data, dbType }: DataTableProps) {
-  if (!data || data.length === 0) return null;
-
-  if (dbType === 'mysql') {
+  if (!data || data.length === 0) {
     return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {Object.keys(data[0]).map((column) => (
-                <th
-                  key={column}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  {column}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((row: any, i: number) => (
-              <tr key={i}>
-                {Object.values(row).map((value: any, j: number) => (
-                  <td
-                    key={j}
-                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                  >
-                    {typeof value === 'object'
-                      ? JSON.stringify(value)
-                      : String(value)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="text-sm text-muted-foreground py-4 text-center">
+        No data available
       </div>
     );
   }
 
+  // Get all unique keys from all rows to handle cases where rows have different keys
+  const allKeys = new Set<string>();
+  data.forEach((row) => {
+    Object.keys(row).forEach((key) => allKeys.add(key));
+  });
+  const columns = Array.from(allKeys);
+
   return (
-    <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-      {JSON.stringify(data, null, 2)}
-    </pre>
+    <div className="rounded-md border overflow-hidden">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map((column) => (
+                <TableHead key={column} className="font-semibold">
+                  {column}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((row: any, i: number) => (
+              <TableRow key={i}>
+                {columns.map((column, j: number) => {
+                  const value = row[column];
+                  return (
+                    <TableCell key={j} className="font-mono text-sm">
+                      {value === null || value === undefined
+                        ? <span className="text-muted-foreground italic">null</span>
+                        : typeof value === 'object'
+                          ? JSON.stringify(value)
+                          : String(value)}
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 } 

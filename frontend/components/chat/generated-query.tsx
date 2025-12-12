@@ -8,7 +8,7 @@ interface GeneratedQueryProps {
 export function GeneratedQuery({ query, onExecute }: GeneratedQueryProps) {
   return (
     <div>
-      <p className="mb-4">I've generated this query based on your request:</p>
+      <p className="mb-4">{`I've generated this query based on your request:`}</p>
       <pre className="bg-gray-100 p-2 rounded-md mt-2 mb-4">
         {query}
       </pre>

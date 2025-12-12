@@ -4,29 +4,29 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 
 interface DatabaseContextType {
   dbType: string;
-  selectedTable: string;
   databaseName: string;
+  databaseUrl: string | null;
   setDbType: (type: string) => void;
-  setSelectedTable: (table: string) => void;
   setDatabaseName: (name: string) => void;
+  setDatabaseUrl: (url: string | null) => void;
 }
 
 const DatabaseContext = createContext<DatabaseContextType | undefined>(undefined);
 
 export function DatabaseProvider({ children }: { children: ReactNode }) {
   const [dbType, setDbType] = useState<string>('mysql');
-  const [selectedTable, setSelectedTable] = useState<string>('');
   const [databaseName, setDatabaseName] = useState<string>('');
+  const [databaseUrl, setDatabaseUrl] = useState<string | null>(null);
 
   return (
     <DatabaseContext.Provider
       value={{
         dbType,
-        selectedTable,
         databaseName,
+        databaseUrl,
         setDbType,
-        setSelectedTable,
         setDatabaseName,
+        setDatabaseUrl,
       }}
     >
       {children}
