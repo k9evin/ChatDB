@@ -1,7 +1,7 @@
 """LangGraph workflow construction."""
 
 from langchain_openai import ChatOpenAI
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import StateGraph
 from langgraph.checkpoint.memory import MemorySaver
 from backend.agent.state import AgentState
 from backend.agent.nodes import (
@@ -84,17 +84,17 @@ def create_agent_graph():
     workflow.add_node("finalize", finalize)
 
     # Set entry point
-    workflow.add_edge(START, "agent")
+    workflow.set_entry_point("agent")
 
     # Add conditional routing
-    workflow.add_conditional_edges("agent", should_continue, {"tools": "tools", "end": END})
+    workflow.add_conditional_edges("agent", should_continue, {"tools": "tools", "end": "finalize"})
 
     workflow.add_conditional_edges(
-        "tools", check_error_limit, {"agent": "agent", "finalize": "finalize", "end": END}
+        "tools", check_error_limit, {"agent": "agent", "finalize": "finalize"}
     )
 
     # Finalize always ends
-    workflow.add_edge("finalize", END)
+    workflow.set_finish_point("finalize")
 
     # Add memory for conversation persistence
     memory = MemorySaver()
