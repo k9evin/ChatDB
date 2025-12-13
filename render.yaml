@@ -2,6 +2,7 @@ services:
   - type: web
     name: chatdb-backend
     env: python
+    runtime: python-3.11.9
     region: oregon
     plan: free
     buildCommand: pip install -r backend/requirements.txt
