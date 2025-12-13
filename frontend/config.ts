@@ -10,12 +10,12 @@ interface Config {
 }
 
 const config: Config = {
-  backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000",
+  backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000',
   api: {
-    upload: "/api/upload",
-    sampleQueries: "/api/sample-queries",
-    naturalLanguageQuery: "/api/natural-language-query",
-    executeQuery: "/api/execute-query",
+    upload: '/api/upload',
+    sampleQueries: '/api/sample-queries',
+    naturalLanguageQuery: '/api/natural-language-query',
+    executeQuery: '/api/execute-query',
   },
   maxUploadSize: 10485760, // 10MB in bytes
 };

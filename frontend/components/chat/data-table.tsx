@@ -14,19 +14,19 @@ interface DataTableProps {
 
 export function DataTable({ data, dbType }: DataTableProps) {
   if (!data || data.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground py-4 text-center">
-        No data available
-      </div>
-    );
+    return <div className="text-sm text-muted-foreground py-4 text-center">No data available</div>;
   }
 
   // Get all unique keys from all rows to handle cases where rows have different keys
-  const allKeys = new Set<string>();
+  const allKeys: string[] = [];
   data.forEach((row) => {
-    Object.keys(row).forEach((key) => allKeys.add(key));
+    Object.keys(row).forEach((key) => {
+      if (!allKeys.includes(key)) {
+        allKeys.push(key);
+      }
+    });
   });
-  const columns = Array.from(allKeys);
+  const columns = allKeys;
 
   return (
     <div className="rounded-md border overflow-hidden">
@@ -48,11 +48,13 @@ export function DataTable({ data, dbType }: DataTableProps) {
                   const value = row[column];
                   return (
                     <TableCell key={j} className="font-mono text-sm">
-                      {value === null || value === undefined
-                        ? <span className="text-muted-foreground italic">null</span>
-                        : typeof value === 'object'
-                          ? JSON.stringify(value)
-                          : String(value)}
+                      {value === null || value === undefined ? (
+                        <span className="text-muted-foreground italic">null</span>
+                      ) : typeof value === 'object' ? (
+                        JSON.stringify(value)
+                      ) : (
+                        String(value)
+                      )}
                     </TableCell>
                   );
                 })}
@@ -63,4 +65,4 @@ export function DataTable({ data, dbType }: DataTableProps) {
       </div>
     </div>
   );
-} 
+}

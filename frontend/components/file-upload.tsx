@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import config from '@/config';
-import { cn } from '@/lib/utils';
 import { useDatabase } from '@/contexts/database-context';
+import { cn } from '@/lib/utils';
 
 interface FileUploadProps {
   className?: string;
@@ -112,27 +112,18 @@ export function FileUpload({ className }: FileUploadProps) {
   };
 
   return (
-    <Card className={cn("shadow-none", className)}>
+    <Card className={cn('shadow-none', className)}>
       <CardHeader>
         <CardTitle>Upload Data File</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="data-file">
-              Select CSV File
-            </Label>
-            <Input
-              id="data-file"
-              type="file"
-              accept=".csv"
-              onChange={handleFileChange}
-            />
+            <Label htmlFor="data-file">Select CSV File</Label>
+            <Input id="data-file" type="file" accept=".csv" onChange={handleFileChange} />
           </div>
           <div>
-            <Label htmlFor="database-name">
-              Table Name
-            </Label>
+            <Label htmlFor="database-name">Table Name</Label>
             <Input
               id="database-name"
               value={tableName}
@@ -141,11 +132,7 @@ export function FileUpload({ className }: FileUploadProps) {
               required
             />
           </div>
-          <Button
-            onClick={handleUpload}
-            disabled={!file || !tableName}
-            className="w-full"
-          >
+          <Button onClick={handleUpload} disabled={!file || !tableName} className="w-full">
             Upload and Process
           </Button>
         </div>

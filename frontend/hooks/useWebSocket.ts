@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface WebSocketMessage {
-  type: "token" | "tool_start" | "tool_result" | "complete" | "error";
+  type: 'token' | 'tool_start' | 'tool_result' | 'complete' | 'error';
   content?: string;
   tool?: string;
   output?: any;
@@ -19,7 +19,7 @@ interface UseWebSocketOptions {
 
 export function useWebSocket(options: UseWebSocketOptions = {}) {
   const {
-    url = "ws://localhost:8000/ws/chat",
+    url = 'ws://localhost:8000/ws/chat',
     onMessage,
     onError,
     onOpen,
@@ -34,6 +34,18 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   const hasLoggedError = useRef(false);
+  
+  const onMessageRef = useRef(onMessage);
+  const onErrorRef = useRef(onError);
+  const onOpenRef = useRef(onOpen);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+    onErrorRef.current = onError;
+    onOpenRef.current = onOpen;
+    onCloseRef.current = onClose;
+  });
 
   const connect = useCallback(() => {
     // Prevent multiple simultaneous connection attempts
@@ -59,18 +71,17 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         setIsConnected(true);
         setIsConnecting(false);
         reconnectAttempts.current = 0;
-        hasLoggedError.current = false; // Reset error logging on successful connection
-        onOpen?.();
+        hasLoggedError.current = false;
+        onOpenRef.current?.();
       };
 
       ws.onmessage = (event) => {
         try {
           const data: WebSocketMessage = JSON.parse(event.data);
-          onMessage?.(data);
+          onMessageRef.current?.(data);
         } catch (error) {
-          // Only log parsing errors once to prevent spam
           if (!hasLoggedError.current) {
-            console.error("Error parsing WebSocket message:", error);
+            console.error('Error parsing WebSocket message:', error);
             hasLoggedError.current = true;
           }
         }
@@ -78,38 +89,35 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
       ws.onerror = (error) => {
         setIsConnecting(false);
-        // Only call onError callback on first error to prevent spam
         if (!hasLoggedError.current) {
           hasLoggedError.current = true;
-          onError?.(error);
+          onErrorRef.current?.(error);
         }
       };
 
       ws.onclose = () => {
         setIsConnected(false);
         setIsConnecting(false);
-        onClose?.();
+        onCloseRef.current?.();
 
-        // Attempt to reconnect only if autoConnect is enabled
         if (autoConnect && reconnectAttempts.current < maxReconnectAttempts) {
           reconnectAttempts.current += 1;
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
-          }, 1000 * reconnectAttempts.current); // Exponential backoff
+          }, 1000 * reconnectAttempts.current);
         }
       };
 
       wsRef.current = ws;
     } catch (error) {
       setIsConnecting(false);
-      // Only log creation errors once to prevent spam
       if (!hasLoggedError.current) {
-        console.error("Error creating WebSocket:", error);
+        console.error('Error creating WebSocket:', error);
         hasLoggedError.current = true;
-        onError?.(error as Event);
+        onErrorRef.current?.(error as Event);
       }
     }
-  }, [url, onMessage, onError, onOpen, onClose, isConnecting]);
+  }, [url, isConnecting, autoConnect]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

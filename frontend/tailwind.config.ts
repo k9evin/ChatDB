@@ -11,8 +11,7 @@ const config: Config = {
     extend: {
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic':
-          'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -22,6 +21,10 @@ const config: Config = {
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        sidebar: {
+          DEFAULT: 'hsl(var(--sidebar))',
+          foreground: 'hsl(var(--foreground))',
+        },
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
@@ -61,6 +64,12 @@ const config: Config = {
           '5': 'hsl(var(--chart-5))',
         },
       },
+      animation: {
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
+        'border-beam': 'border-beam calc(var(--duration)*1s) infinite linear',
+        shine: 'shine var(--duration) infinite linear',
+      },
       keyframes: {
         'accordion-down': {
           from: {
@@ -78,10 +87,22 @@ const config: Config = {
             height: '0',
           },
         },
-      },
-      animation: {
-        'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up': 'accordion-up 0.2s ease-out',
+        'border-beam': {
+          '100%': {
+            'offset-distance': '100%',
+          },
+        },
+        shine: {
+          '0%': {
+            'background-position': '0% 0%',
+          },
+          '50%': {
+            'background-position': '100% 100%',
+          },
+          to: {
+            'background-position': '0% 0%',
+          },
+        },
       },
     },
   },

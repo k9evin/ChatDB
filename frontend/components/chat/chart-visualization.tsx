@@ -2,28 +2,28 @@
 
 import * as React from 'react';
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-  type ChartConfig,
-} from '@/components/ui/chart';
-import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
+  CartesianGrid,
+  Cell,
   Line,
   LineChart,
   Pie,
   PieChart,
-  Cell,
-  Area,
-  AreaChart,
+  ResponsiveContainer,
   XAxis,
   YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
 } from 'recharts';
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
 
 interface ChartVisualizationProps {
   chartType: string;
@@ -76,9 +76,7 @@ export function ChartVisualization({ chartType, data, config }: ChartVisualizati
     case 'bar':
       return (
         <div className="space-y-4">
-          {config.title && (
-            <h3 className="text-lg font-semibold">{config.title}</h3>
-          )}
+          {config.title && <h3 className="text-lg font-semibold">{config.title}</h3>}
           <ChartContainer config={chartConfig} className="h-[400px]">
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -94,19 +92,10 @@ export function ChartVisualization({ chartType, data, config }: ChartVisualizati
               <ChartLegend content={<ChartLegendContent />} />
               {config.multiple_series ? (
                 config.multiple_series.map((key) => (
-                  <Bar
-                    key={key}
-                    dataKey={key}
-                    fill={`var(--color-${key})`}
-                    radius={[4, 4, 0, 0]}
-                  />
+                  <Bar key={key} dataKey={key} fill={`var(--color-${key})`} radius={[4, 4, 0, 0]} />
                 ))
               ) : config.y_key ? (
-                <Bar
-                  dataKey={config.y_key}
-                  fill="hsl(var(--chart-1))"
-                  radius={[4, 4, 0, 0]}
-                />
+                <Bar dataKey={config.y_key} fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
               ) : null}
             </BarChart>
           </ChartContainer>
@@ -116,9 +105,7 @@ export function ChartVisualization({ chartType, data, config }: ChartVisualizati
     case 'line':
       return (
         <div className="space-y-4">
-          {config.title && (
-            <h3 className="text-lg font-semibold">{config.title}</h3>
-          )}
+          {config.title && <h3 className="text-lg font-semibold">{config.title}</h3>}
           <ChartContainer config={chartConfig} className="h-[400px]">
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -160,9 +147,7 @@ export function ChartVisualization({ chartType, data, config }: ChartVisualizati
     case 'area':
       return (
         <div className="space-y-4">
-          {config.title && (
-            <h3 className="text-lg font-semibold">{config.title}</h3>
-          )}
+          {config.title && <h3 className="text-lg font-semibold">{config.title}</h3>}
           <ChartContainer config={chartConfig} className="h-[400px]">
             <AreaChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -204,9 +189,7 @@ export function ChartVisualization({ chartType, data, config }: ChartVisualizati
     case 'pie':
       return (
         <div className="space-y-4">
-          {config.title && (
-            <h3 className="text-lg font-semibold">{config.title}</h3>
-          )}
+          {config.title && <h3 className="text-lg font-semibold">{config.title}</h3>}
           <ChartContainer config={chartConfig} className="h-[400px]">
             <PieChart>
               <Pie
@@ -220,10 +203,7 @@ export function ChartVisualization({ chartType, data, config }: ChartVisualizati
                 dataKey={config.value_key || 'value'}
               >
                 {data.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
               <ChartTooltip content={<ChartTooltipContent />} />
@@ -235,9 +215,7 @@ export function ChartVisualization({ chartType, data, config }: ChartVisualizati
     case 'scatter':
       return (
         <div className="space-y-4">
-          {config.title && (
-            <h3 className="text-lg font-semibold">{config.title}</h3>
-          )}
+          {config.title && <h3 className="text-lg font-semibold">{config.title}</h3>}
           <ChartContainer config={chartConfig} className="h-[400px]">
             <ResponsiveContainer>
               <BarChart data={data}>
@@ -254,12 +232,7 @@ export function ChartVisualization({ chartType, data, config }: ChartVisualizati
 
     default:
       return (
-        <div className="text-muted-foreground">
-          Chart type {`"${chartType}"`} is not supported
-        </div>
+        <div className="text-muted-foreground">Chart type {`"${chartType}"`} is not supported</div>
       );
   }
 }
-
-
-

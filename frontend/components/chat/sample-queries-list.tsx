@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 
 interface SampleQueriesListProps {
   queries: any[];
@@ -16,9 +16,7 @@ export function SampleQueriesList({ queries, dbType, onExecute }: SampleQueriesL
             {dbType === 'mysql' ? query.mysql_query : query.mongodb_query}
           </pre>
           <Button
-            onClick={() =>
-              onExecute(dbType === 'mysql' ? query.mysql_query : query.mongodb_query)
-            }
+            onClick={() => onExecute(dbType === 'mysql' ? query.mysql_query : query.mongodb_query)}
             className="mt-2"
             size="sm"
           >
@@ -28,4 +26,4 @@ export function SampleQueriesList({ queries, dbType, onExecute }: SampleQueriesL
       ))}
     </ul>
   );
-} 
+}

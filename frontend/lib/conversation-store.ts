@@ -4,7 +4,7 @@
  */
 
 export interface StoredMessage {
-  type: "user" | "assistant";
+  type: 'user' | 'assistant';
   content: string;
   chartData?: any;
   tableData?: any[];
@@ -22,7 +22,7 @@ export interface ConversationRecord extends ConversationMeta {
   messages: StoredMessage[];
 }
 
-const INDEX_KEY = "chatdb:conversations:index";
+const INDEX_KEY = 'chatdb:conversations:index';
 const CONVO_KEY = (id: string) => `chatdb:conversation:${id}`;
 
 function readJSON<T>(key: string, fallback: T): T {
@@ -55,9 +55,7 @@ export async function listConversations(): Promise<ConversationMeta[]> {
   return loadIndex();
 }
 
-export async function loadConversation(
-  id: string
-): Promise<ConversationRecord | null> {
+export async function loadConversation(id: string): Promise<ConversationRecord | null> {
   const convo = readJSON<ConversationRecord | null>(CONVO_KEY(id), null);
   return convo;
 }
@@ -91,6 +89,3 @@ export async function deleteConversation(id: string) {
     // ignore
   }
 }
-
-
-

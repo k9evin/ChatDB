@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, type ReactNode, useContext, useState } from 'react';
 
 interface DatabaseContextType {
   dbType: string;
@@ -40,4 +40,4 @@ export function useDatabase() {
     throw new Error('useDatabase must be used within a DatabaseProvider');
   }
   return context;
-} 
+}

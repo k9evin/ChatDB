@@ -61,10 +61,7 @@ export function VegaLiteVisualization({ spec }: VegaLiteVisualizationProps) {
   };
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full p-4 bg-gray-900/50 rounded-lg border border-gray-700"
-    >
+    <div ref={containerRef} className="w-full p-4 bg-gray-900/50 rounded-lg border border-gray-700">
       <VegaEmbed
         spec={enhancedSpec as any}
         options={{
@@ -75,4 +72,3 @@ export function VegaLiteVisualization({ spec }: VegaLiteVisualizationProps) {
     </div>
   );
 }
-
