@@ -5,6 +5,7 @@ import sys
 import subprocess
 from pathlib import Path
 
+
 def check_uv_installed():
     """Check if uv is installed."""
     try:
@@ -13,15 +14,16 @@ def check_uv_installed():
     except FileNotFoundError:
         return False
 
+
 def create_env_file():
     """Create .env file from .env.example if it doesn't exist."""
     env_path = Path(__file__).parent / ".env"
     env_example_path = Path(__file__).parent / ".env.example"
-    
+
     if env_path.exists():
         print(f"✓ .env file already exists at {env_path}")
         return
-    
+
     if not env_example_path.exists():
         print("Creating .env.example file...")
         env_example_content = """# OpenRouter Configuration
@@ -50,10 +52,10 @@ MAX_CONTEXT_LENGTH=128000
 API_HOST=0.0.0.0
 API_PORT=8000
 API_DEBUG=true
-CORS_ORIGINS=*
+CORS_ORIGINS=https://chatdb-frontend.vercel.app,http://localhost:3000
 """
         env_example_path.write_text(env_example_content)
-    
+
     print(f"Creating .env file from {env_example_path}...")
     env_content = env_example_path.read_text()
     env_path.write_text(env_content)
@@ -65,6 +67,7 @@ def create_sample_database():
     """Create sample database."""
     try:
         from backend.database.sample_data import create_sample_database
+
         print("Creating sample database...")
         create_sample_database()
         print("✓ Sample database created successfully!")
@@ -79,7 +82,7 @@ if __name__ == "__main__":
     print("Setting up ChatDB backend...")
     print("=" * 50)
     print()
-    
+
     # Check for uv
     if check_uv_installed():
         print("✓ uv is installed")
@@ -88,15 +91,15 @@ if __name__ == "__main__":
         print("   Run: curl -LsSf https://astral.sh/uv/install.sh | sh")
         print("   Or: pip install uv")
         print()
-    
+
     # Create .env file
     create_env_file()
     print()
-    
+
     # Create sample database
     create_sample_database()
     print()
-    
+
     print("=" * 50)
     print("Setup complete!")
     print("=" * 50)
@@ -110,4 +113,3 @@ if __name__ == "__main__":
         print("2. Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh")
         print("3. Install dependencies: uv sync")
         print("4. Start the server: uv run python -m backend.main")
-
