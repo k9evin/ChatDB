@@ -17,7 +17,7 @@ pymysql==1.1.0
 psycopg2-binary==2.9.9
 
 # ML & Embeddings
-openai==1.3.7
+openai>=1.6.1
 scikit-learn==1.3.2
 numpy==1.24.3
 
