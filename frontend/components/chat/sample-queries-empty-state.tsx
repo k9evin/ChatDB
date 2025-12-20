@@ -1,6 +1,14 @@
 'use client';
 
-import { BarChart3, Package, ShoppingCart, Sparkles, TrendingUp, Users } from 'lucide-react';
+import {
+  Package,
+  Sparkles,
+  TrendingUp,
+  Users,
+  Building2,
+  Target,
+  Briefcase
+} from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface SampleQuery {
@@ -27,43 +35,43 @@ export function SampleQueriesEmptyState({ onQueryClick }: SampleQueriesEmptyStat
       gradient: 'from-blue-500 to-cyan-500',
     },
     {
-      id: 'top-customers',
-      title: 'Top Customers',
-      description: 'Who are the top 5 customers by total spending?',
-      query: 'Who are the top 5 customers by total spending?',
+      id: 'customer-segmentation',
+      title: 'Customer Segmentation',
+      description: 'Show me revenue breakdown by customer segment with a pie chart',
+      query: 'Show me the total revenue breakdown by customer segment with a pie chart',
       icon: <Users className="h-5 w-5" />,
       gradient: 'from-purple-500 to-pink-500',
     },
     {
       id: 'product-performance',
       title: 'Product Performance',
-      description: 'Show me product sales distribution by category',
-      query: 'Show me product sales distribution by category with a pie chart',
+      description: 'Show me top 10 best-selling products by revenue',
+      query: 'Show me the top 10 best-selling products by total revenue',
       icon: <Package className="h-5 w-5" />,
       gradient: 'from-orange-500 to-red-500',
     },
     {
-      id: 'order-status',
-      title: 'Order Status',
-      description: 'What is the breakdown of orders by status?',
-      query: 'What is the breakdown of orders by status?',
-      icon: <ShoppingCart className="h-5 w-5" />,
+      id: 'department-performance',
+      title: 'Department Performance',
+      description: 'Show me department expenses vs budget with a bar chart',
+      query: 'Show me each department\'s expenses compared to their budget with a bar chart',
+      icon: <Building2 className="h-5 w-5" />,
       gradient: 'from-green-500 to-emerald-500',
     },
     {
-      id: 'inventory-check',
-      title: 'Inventory Check',
-      description: 'Which products are running low on stock?',
-      query: 'Which products have stock below 30 units?',
-      icon: <BarChart3 className="h-5 w-5" />,
+      id: 'project-progress',
+      title: 'Project Progress',
+      description: 'Show me project status and budget utilization',
+      query: 'Show me all projects with their status, budget, and completion percentage',
+      icon: <Briefcase className="h-5 w-5" />,
       gradient: 'from-indigo-500 to-blue-500',
     },
     {
-      id: 'customer-growth',
-      title: 'Customer Growth',
-      description: 'Show customer registration trend over time',
-      query: 'Show me customer registration trend by month with a line chart',
-      icon: <Sparkles className="h-5 w-5" />,
+      id: 'marketing-campaigns',
+      title: 'Campaign Performance',
+      description: 'Show me marketing campaign ROI and conversion rates',
+      query: 'Show me marketing campaign performance with conversion rates and ROI',
+      icon: <Target className="h-5 w-5" />,
       gradient: 'from-pink-500 to-rose-500',
     },
   ];
@@ -97,7 +105,7 @@ export function SampleQueriesEmptyState({ onQueryClick }: SampleQueriesEmptyStat
             <CardContent className="p-6">
               {/* Icon with gradient background */}
               <div
-                className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${sample.gradient} text-white mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}
+                className={`inline-flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br ${sample.gradient} text-white mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}
               >
                 {sample.icon}
               </div>

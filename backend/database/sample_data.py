@@ -7,15 +7,7 @@ from backend.config.settings import get_settings
 
 
 def create_sample_database(database_url: Optional[str] = None):
-    """
-    Create SQLite database with sample tables for demo.
-    
-    Tables:
-    - customers: id, name, email, created_at
-    - orders: order_id, customer_id, amount, order_date, status
-    - products: product_id, name, category, price, stock
-    - order_items: id, order_id, product_id, quantity, price
-    """
+    """Create SQLite database with sample tables for demo."""
     from typing import Optional
     
     settings = get_settings()

@@ -53,6 +53,7 @@ export function useChat({
   const pendingChartRef = useRef<ChartData | null>(null);
   const pendingTableRef = useRef<any[] | null>(null);
   const conversationIdRef = useRef<string | null>(null);
+  const isReconnectingRef = useRef(false); // Track if we're reconnecting to prevent auto-query
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -72,6 +73,14 @@ export function useChat({
   }, [conversationId]);
 
   const { isConnected, sendMessage, isConnecting } = useWebSocket({
+    onOpen: () => {
+      // Clear reconnecting flag when connection is established
+      isReconnectingRef.current = false;
+    },
+    onClose: () => {
+      // Set reconnecting flag when connection is lost
+      isReconnectingRef.current = true;
+    },
     onMessage: (wsMessage) => {
       if (wsMessage.type === "token") {
         // Append token to current assistant message
@@ -153,7 +162,8 @@ export function useChat({
       } else if (wsMessage.type === "complete") {
         // Finalize assistant message
         // Use refs to get the latest values (avoiding stale closure issues)
-        const finalMessage = currentMessageRef.current;
+        // Prefer content from wsMessage if available (it's the cleaned final version from backend)
+        const finalMessage = wsMessage.content || currentMessageRef.current;
         const finalChart = pendingChartRef.current;
         const finalTable = pendingTableRef.current;
 
@@ -241,6 +251,11 @@ export function useChat({
       console.log("[handleSubmit] Already streaming");
       return;
     }
+    // Prevent auto-query during reconnection
+    if (isReconnectingRef.current) {
+      console.log("[handleSubmit] Skipping query during reconnection");
+      return;
+    }
 
     const userMessage = input.trim();
 
@@ -305,6 +320,11 @@ export function useChat({
       return;
     }
     if (isStreaming) {
+      return;
+    }
+    // Prevent auto-query during reconnection
+    if (isReconnectingRef.current) {
+      console.log("[handleSampleQueryClick] Skipping query during reconnection");
       return;
     }
 

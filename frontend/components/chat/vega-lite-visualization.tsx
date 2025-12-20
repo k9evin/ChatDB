@@ -15,14 +15,29 @@ export function VegaLiteVisualization({ spec }: VegaLiteVisualizationProps) {
   React.useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
+        // Get the actual available width (accounting for padding)
         const width = containerRef.current.offsetWidth;
-        setContainerWidth(Math.max(width - 32, 300)); // Subtract padding, min 300px
+        // Subtract padding (p-4 = 16px on each side = 32px total)
+        const availableWidth = Math.max(width - 32, 300);
+        setContainerWidth(availableWidth);
       }
     };
 
-    updateWidth();
+    // Use ResizeObserver for more accurate width tracking
+    const resizeObserver = new ResizeObserver(() => {
+      updateWidth();
+    });
+
+    if (containerRef.current) {
+      updateWidth();
+      resizeObserver.observe(containerRef.current);
+    }
+
     window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateWidth);
+    };
   }, []);
 
   if (!spec) return null;
@@ -32,7 +47,11 @@ export function VegaLiteVisualization({ spec }: VegaLiteVisualizationProps) {
     ...spec,
     width: containerWidth,
     height: 300,
-    autosize: { type: 'fit', contains: 'padding' },
+    autosize: { 
+      type: 'fit', 
+      contains: 'padding',
+      resize: true
+    },
     config: {
       ...spec.config,
       background: 'transparent',
@@ -61,7 +80,7 @@ export function VegaLiteVisualization({ spec }: VegaLiteVisualizationProps) {
   };
 
   return (
-    <div ref={containerRef} className="w-full p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+    <div ref={containerRef} className="w-full min-w-0 p-4 bg-gray-900/50 rounded-lg border border-gray-700 overflow-hidden">
       <VegaEmbed
         spec={enhancedSpec as any}
         options={{

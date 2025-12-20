@@ -34,11 +34,12 @@ export function MessageItem({ message, dbType }: MessageItemProps) {
 
   return (
     <div className={`flex gap-4 w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div className={`flex gap-3 max-w-[85%] md:max-w-[75%] ${isUser ? 'flex-row-reverse' : ''}`}>
-        <Avatar className="w-8 h-8 mt-1 border border-border/50 shadow-sm shrink-0">
+      <div className={`flex gap-3 max-w-[85%] md:max-w-[75%] min-w-0 ${isUser ? 'flex-row-reverse' : ''}`}>
+        <Avatar className="w-10 h-10 mt-1 border border-border/50 shadow-sm shrink-0">
           <AvatarImage
             src={isUser ? '/user-avatar.png' : '/bot-avatar.png'}
             alt={isUser ? 'User' : 'Bot'}
+            className="object-cover"
           />
           <AvatarFallback
             className={isUser ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
@@ -48,7 +49,7 @@ export function MessageItem({ message, dbType }: MessageItemProps) {
         </Avatar>
 
         <div
-          className={`relative rounded-2xl px-5 py-3.5 shadow-sm text-sm leading-relaxed
+          className={`relative rounded-2xl px-5 py-3.5 shadow-sm text-sm leading-relaxed min-w-0 max-w-full overflow-hidden
                         ${isUser
               ? 'bg-primary text-primary-foreground rounded-tr-none'
               : 'bg-card border border-border/50 text-card-foreground rounded-tl-none'
@@ -65,26 +66,32 @@ export function MessageItem({ message, dbType }: MessageItemProps) {
 
           {/* Display chart if available */}
           {message.chartData && (
-            <div className="mt-4 pt-4 border-t border-border/20 w-full overflow-hidden">
+            <div className="mt-4 pt-4 border-t border-border/20 w-full min-w-0">
               {message.chartData.vega_lite_spec ? (
-                <VegaLiteVisualization spec={message.chartData.vega_lite_spec} />
+                <div className="-mx-5 px-5 min-w-0">
+                  <VegaLiteVisualization spec={message.chartData.vega_lite_spec} />
+                </div>
               ) : (
-                <ChartVisualization
-                  chartType={message.chartData.chart_type}
-                  data={message.chartData.data}
-                  config={message.chartData.config}
-                />
+                <div className="-mx-5 px-5 min-w-0">
+                  <ChartVisualization
+                    chartType={message.chartData.chart_type}
+                    data={message.chartData.data}
+                    config={message.chartData.config}
+                  />
+                </div>
               )}
             </div>
           )}
 
           {/* Display table data if available */}
           {message.tableData && message.tableData.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-border/20 w-full overflow-x-auto">
+            <div className="mt-4 pt-4 border-t border-border/20 w-full min-w-0">
               <h4 className="text-xs font-semibold mb-2 opacity-70 uppercase tracking-wider">
                 Query Results
               </h4>
-              <DataTable data={message.tableData} dbType={dbType || ''} />
+              <div className="overflow-x-auto -mx-5 px-5">
+                <DataTable data={message.tableData} dbType={dbType || ''} />
+              </div>
             </div>
           )}
         </div>

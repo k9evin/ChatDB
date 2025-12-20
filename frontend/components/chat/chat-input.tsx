@@ -40,7 +40,7 @@ export function ChatInput({ input, setInput, onSubmit, isConnected, isStreaming 
                             }
                         }}
                         placeholder="Ask me anything..."
-                        className="min-h-[60px] max-h-[200px] w-full border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 resize-none text-lg placeholder:text-muted-foreground/50 text-foreground p-0"
+                        className="min-h-[52px] max-h-[200px] w-full border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 resize-none text-sm placeholder:text-muted-foreground/50 text-foreground p-0 rounded-none custom-scrollbar"
                         disabled={!isConnected || isStreaming}
                         aria-label="Message input"
                         id="chat-input"

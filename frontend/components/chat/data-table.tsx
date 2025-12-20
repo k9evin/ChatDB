@@ -29,9 +29,9 @@ export function DataTable({ data, dbType }: DataTableProps) {
   const columns = allKeys;
 
   return (
-    <div className="rounded-md border overflow-hidden">
-      <div className="overflow-x-auto">
-        <Table>
+    <div className="rounded-md border overflow-hidden min-w-0">
+      <div className="overflow-x-auto w-full">
+        <Table className="min-w-full">
           <TableHeader>
             <TableRow>
               {columns.map((column) => (
@@ -47,7 +47,7 @@ export function DataTable({ data, dbType }: DataTableProps) {
                 {columns.map((column, j: number) => {
                   const value = row[column];
                   return (
-                    <TableCell key={j} className="font-mono text-sm">
+                    <TableCell key={j} className="font-mono text-sm whitespace-nowrap">
                       {value === null || value === undefined ? (
                         <span className="text-muted-foreground italic">null</span>
                       ) : typeof value === 'object' ? (

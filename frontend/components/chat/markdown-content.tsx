@@ -18,7 +18,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
         components={{
           // Customize table rendering
           table: ({ children }) => (
-            <div className="overflow-x-auto my-4">
+            <div className="overflow-x-auto my-4 -mx-5 px-5">
               <table className="min-w-full divide-y divide-border border border-border rounded-md">
                 {children}
               </table>

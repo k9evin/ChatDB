@@ -19,33 +19,9 @@ from backend.tools.visualization import suggest_chart_type, prepare_chart_data
 
 
 def create_agent_graph():
-    """
-    Build the complete LangGraph workflow.
-
-    Graph structure:
-
-        START
-          ↓
-        [Agent] ←──────┐
-          ↓             │
-      {should_continue} │
-          ↓             │
-        [Tools] ────────┘
-          ↓
-      {check_error_limit}
-          ↓
-         END
-
-    Flow explanation:
-    1. Start with agent node (reasoning)
-    2. If agent calls tools → go to tool node
-    3. After tools execute → check error limit
-    4. If errors < 3 → return to agent for retry
-    5. If errors >= 3 or no tool calls → end
-    """
+    """Build the complete LangGraph workflow."""
     settings = get_settings()
 
-    # Initialize LLM with OpenRouter
     llm = ChatOpenAI(
         model=settings.openrouter_model,
         temperature=settings.temperature,
@@ -58,7 +34,6 @@ def create_agent_graph():
         },
     )
 
-    # Collect all tools
     tools = [
         get_all_tables,
         get_table_schema,
@@ -70,33 +45,23 @@ def create_agent_graph():
         prepare_chart_data,
     ]
 
-    # Create nodes
     agent = create_agent_node(llm, tools)
     finalize = create_finalize_node(llm)
     tool_node = create_tool_node_with_fallback(tools)
 
-    # Build graph
     workflow = StateGraph(AgentState)
 
-    # Add nodes
     workflow.add_node("agent", agent)
     workflow.add_node("tools", tool_node)
     workflow.add_node("finalize", finalize)
 
-    # Set entry point using START constant (official recommended way)
     workflow.add_edge(START, "agent")
-
-    # Add conditional routing
     workflow.add_conditional_edges("agent", should_continue, {"tools": "tools", "end": "finalize"})
-
     workflow.add_conditional_edges(
         "tools", check_error_limit, {"agent": "agent", "finalize": "finalize"}
     )
-
-    # Finalize always ends using END constant (official recommended way)
     workflow.add_edge("finalize", END)
 
-    # Add memory for conversation persistence
     memory = MemorySaver()
 
     return workflow.compile(checkpointer=memory)

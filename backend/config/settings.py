@@ -29,14 +29,13 @@ class Settings(BaseSettings):
     max_retries: int = 3
     max_context_length: int = 128000
     temperature: float = 0.0
-    # Keep this reasonably low; we also add a loop-guard in the graph to avoid hangs.
-    recursion_limit: int = 25  # Maximum number of graph steps to prevent infinite loops
+    recursion_limit: int = 25
 
     # API Configuration
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    api_debug: bool = True
-    cors_origins: str = "*"  # Comma-separated list or "*" for all
+    api_debug: bool = False
+    cors_origins: str = "*"
 
     class Config:
         env_file = ".env"

@@ -10,28 +10,10 @@ logger = logging.getLogger(__name__)
 
 @tool
 def execute_sql_query(sql_query: str) -> Dict[str, Any]:
-    """
-    Execute validated SQL query and return results.
-
-    Args:
-        sql_query: SQL query string to execute
-
-    Returns:
-        {
-            "success": True,
-            "rows": [
-                {"id": 1, "name": "Alice", "amount": 150.00},
-                {"id": 2, "name": "Bob", "amount": 200.00}
-            ],
-            "row_count": 2,
-            "sql_query": "SELECT * FROM orders WHERE amount > 100"
-        }
-    """
+    """Execute validated SQL query and return results."""
     logger.info(f"[TOOL execute_sql_query] Called with query: {sql_query[:100]}...")
     try:
         db_manager = get_db_manager()
-
-        # Execute query
         rows = db_manager.execute_query(sql_query)
 
         result = {"success": True, "rows": rows, "row_count": len(rows), "sql_query": sql_query}

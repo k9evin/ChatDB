@@ -16,14 +16,8 @@ class DatabaseManager:
     """Manages database connections and provides introspection utilities."""
     
     def __init__(self, database_url: Optional[str] = None):
-        """
-        Initialize database manager.
-        
-        Args:
-            database_url: Database connection URL. If None, uses context or settings.
-        """
+        """Initialize database manager."""
         settings = get_settings()
-        # Priority: provided URL > context URL > settings URL
         self.database_url = database_url or _db_url_context.get() or settings.database_url
         self._engine: Optional[Engine] = None
     
@@ -31,7 +25,6 @@ class DatabaseManager:
     def engine(self) -> Engine:
         """Get or create database engine."""
         if self._engine is None:
-            # For SQLite, use StaticPool to allow multiple connections
             if self.database_url.startswith("sqlite"):
                 self._engine = create_engine(
                     self.database_url,
@@ -52,18 +45,8 @@ class DatabaseManager:
         return inspect(self.engine)
     
     def execute_query(self, query: str, limit: Optional[int] = None):
-        """
-        Execute a SQL query and return results.
-        
-        Args:
-            query: SQL query string
-            limit: Optional limit for results
-            
-        Returns:
-            List of dictionaries representing rows
-        """
+        """Execute a SQL query and return results."""
         if limit:
-            # Add LIMIT if not already present
             query_upper = query.upper().strip()
             if "LIMIT" not in query_upper:
                 query = f"{query.rstrip(';')} LIMIT {limit}"
@@ -82,31 +65,15 @@ class DatabaseManager:
             self._engine = None
 
 
-# Global database manager instance
 _db_manager: Optional[DatabaseManager] = None
 
 
 def set_database_url_context(database_url: Optional[str]):
-    """
-    Set the database URL context for the current request.
-    
-    Args:
-        database_url: Database connection URL to use
-    """
+    """Set the database URL context for the current request."""
     _db_url_context.set(database_url)
 
 
 def get_db_manager(database_url: Optional[str] = None) -> DatabaseManager:
-    """
-    Get or create database manager instance.
-    
-    Args:
-        database_url: Optional database URL override (takes priority over context)
-        
-    Returns:
-        DatabaseManager instance
-    """
-    # If database_url is provided, use it directly
-    # Otherwise, the DatabaseManager will check context and settings
+    """Get or create database manager instance."""
     return DatabaseManager(database_url)
 

@@ -12,14 +12,17 @@ interface Config {
 /**
  * Application configuration
  *
- * Reads backend URL from environment variable NEXT_PUBLIC_BACKEND_URL
- * Set this in your .env.local file:
- *   NEXT_PUBLIC_BACKEND_URL=http://localhost:8000  (for local development)
- *   NEXT_PUBLIC_BACKEND_URL=https://chatdb-backend.fly.dev  (for production)
+ * Backend URL Configuration:
+ * - Local Development: Set NEXT_PUBLIC_BACKEND_URL in .env.local (defaults to http://localhost:8000)
+ * - Production: Set NEXT_PUBLIC_BACKEND_URL as an environment variable in your deployment platform
+ *   (e.g., Vercel: https://chatdb-backend.fly.dev)
+ *
+ * The NEXT_PUBLIC_ prefix makes this variable available in the browser.
+ * .env.local is gitignored and only used for local development.
  */
 const config: Config = {
-  // Read from .env.local or .env file
-  // NEXT_PUBLIC_ prefix makes it available in the browser
+  // Read from environment variable (set in .env.local for local dev, or deployment env vars for production)
+  // Falls back to http://localhost:8000 if not set (useful for local development)
   backendUrl: (
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
   ).replace(/\/$/, ""),

@@ -13,6 +13,8 @@ A production-grade SQL assistant built with **LangGraph** that enables non-techn
 
 ## 🏗️ Architecture
 
+### System Architecture
+
 ```
 ┌─────────────┐
 │   Frontend  │ (Next.js + TypeScript)
@@ -33,6 +35,33 @@ A production-grade SQL assistant built with **LangGraph** that enables non-techn
        ├──► RAG (Schema Search)
        ├──► Validation (Syntax + Schema)
        └──► Execution (Query Runner)
+```
+
+### Agent Workflow
+
+The system uses a multi-agent orchestration pattern powered by LangGraph, implementing an autonomous loop from natural language to validated insights:
+
+```mermaid
+flowchart TD
+    Start([User Query]) --> Orch{<b>Orchestrator</b>}
+    
+    Orch --> SQL[<b>SQL Specialist Agent</b><br/>Reasoning & SQL Generation]
+    
+    SQL <==> Tools[[<b>Autonomous Capabilities</b><br/>RAG / Validator / Executor / Visualizer]]
+    
+    SQL --> Check{<b>Validation</b>}
+    Check -- "Error (Self-Correction)" --> SQL
+    Check -- "Success" --> Final[<b>Response Specialist Agent</b><br/>Natural Language Summary]
+    
+    Final --> End([User Response])
+
+    style Start fill:#e1f5ff
+    style Orch fill:#fff9c4,stroke:#fbc02d
+    style SQL fill:#fff4e1,stroke:#d4a017
+    style Check fill:#fff9c4,stroke:#fbc02d
+    style Final fill:#f3e5f5,stroke:#9c27b0
+    style Tools fill:#e8f5e9,stroke:#2e7d32
+    style End fill:#ffebee
 ```
 
 ## 📋 Prerequisites
@@ -183,100 +212,46 @@ chatdb/
 
 ## 🧪 Testing
 
-### Backend Tests
-
 ```bash
-cd backend
-pytest tests/
+# Backend tests
+cd backend && pytest tests/
+
+# Test REST API
+curl -X POST http://localhost:8000/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"message": "show me all customers"}'
 ```
-
-### Manual Testing
-
-1. **Test WebSocket connection:**
-   ```bash
-   # Use a WebSocket client or the frontend
-   ```
-
-2. **Test REST API:**
-   ```bash
-   curl -X POST http://localhost:8000/api/query \
-     -H "Content-Type: application/json" \
-     -d '{"message": "show me all customers"}'
-   ```
 
 ## 🔍 Observability
 
-### LangSmith Integration
-
-Enable LangSmith tracing for debugging and monitoring:
+Enable LangSmith tracing (optional):
 
 ```env
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_API_KEY=your-langsmith-key
-LANGCHAIN_PROJECT=ChatDB-Agent
 ```
 
-## 🚨 Error Handling
+## 📚 API
 
-The system includes:
-- **Syntax Validation**: Prevents SQL injection and dangerous operations
-- **Schema Validation**: Ensures column names exist
-- **Retry Logic**: Maximum 3 retries per query
-- **Error Messages**: Clear, actionable error messages
+### FastAPI Docs (Browse All Endpoints)
 
-## 🔐 Security
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+- **OpenAPI JSON**: `http://localhost:8000/openapi.json`
 
-- **Read-Only Queries**: Only SELECT queries are allowed
-- **Input Validation**: Multi-layer validation pipeline
-- **SQL Injection Protection**: Parameterized queries and validation
-- **CORS Configuration**: Configurable CORS settings
+**WebSocket:** `ws://localhost:8000/ws/chat`
 
-## 📚 API Documentation
-
-### WebSocket Endpoint
-
-**URL:** `ws://localhost:8000/ws/chat`
-
-**Protocol:**
+**REST:** `POST /api/query`
 ```json
-// Client → Server
-{"message": "show me all customers"}
-
-// Server → Client (streaming)
-{"type": "token", "content": "I'll"}
-{"type": "token", "content": " help"}
-{"type": "tool_start", "tool": "search_relevant_tables"}
-{"type": "tool_result", "tool": "search_relevant_tables", "output": {...}}
-{"type": "complete", "content": "Here are the results..."}
+{"message": "show me all customers", "thread_id": "optional"}
 ```
 
-### REST Endpoint
+## 🔐 Security & Error Handling
 
-**POST** `/api/query`
-
-```json
-{
-  "message": "show me all customers",
-  "thread_id": "optional_thread_id"
-}
-```
-
-**Response:**
-```json
-{
-  "response": "Here are all customers...",
-  "conversation_id": "thread_abc123",
-  "messages": [...]
-}
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+- **Read-Only Queries**: Only SELECT queries allowed
+- **Multi-Layer Validation**: Syntax and schema validation
+- **Error Recovery**: Automatic retry with limit (max 3 errors, 10 tool rounds)
+- **SQL Injection Protection**: Parameterized queries
 
 ## 📝 License
 
@@ -284,27 +259,4 @@ MIT License
 
 ## 🙏 Acknowledgments
 
-- Built with [LangGraph](https://github.com/langchain-ai/langgraph)
-- Powered by [OpenRouter](https://openrouter.ai/)
-- Frontend built with [Next.js](https://nextjs.org/)
-
-## 🐛 Troubleshooting
-
-### Backend won't start
-- Check that Python 3.11+ is installed
-- Verify all dependencies are installed: `pip install -r requirements.txt`
-- Check `.env` file exists and has valid API keys
-
-### WebSocket connection fails
-- Ensure backend is running on the correct port
-- Check CORS settings in `backend/config/settings.py`
-- Verify WebSocket URL in frontend `config.ts`
-
-### Database connection errors
-- Verify `DATABASE_URL` in `.env`
-- For SQLite, ensure the database file path is correct
-- For PostgreSQL/MySQL, verify credentials and network access
-
-## 📞 Support
-
-For issues and questions, please open an issue on GitHub.
+Built with [LangGraph](https://github.com/langchain-ai/langgraph), powered by [OpenRouter](https://openrouter.ai/), frontend with [Next.js](https://nextjs.org/)

@@ -9,7 +9,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEle
     <aside
       ref={ref}
       className={cn(
-        'flex h-full min-h-[520px] w-[320px] flex-shrink-0 flex-col rounded-xl border bg-card text-foreground shadow-sm',
+        'flex h-full min-h-[520px] w-[320px] flex-shrink-0 flex-col rounded-lg border bg-card text-foreground shadow-sm',
         className
       )}
       {...props}

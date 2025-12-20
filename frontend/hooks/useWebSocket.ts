@@ -46,6 +46,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   const hasLoggedError = useRef(false);
+  const isFirstConnection = useRef(true); // Track if this is the first connection
 
   const onMessageRef = useRef(onMessage);
   const onErrorRef = useRef(onError);

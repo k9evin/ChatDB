@@ -10,12 +10,7 @@ logger = logging.getLogger(__name__)
 
 @tool
 def get_all_tables() -> Dict[str, Any]:
-    """
-    Get all table names from the database.
-
-    Returns:
-        {"tables": ["customers", "orders", "products"], "count": 3}
-    """
+    """Get all table names from the database."""
     logger.info("[TOOL get_all_tables] Called")
     try:
         db_manager = get_db_manager()
@@ -32,40 +27,12 @@ def get_all_tables() -> Dict[str, Any]:
 
 @tool
 def get_table_schema(table_name: str) -> Dict[str, Any]:
-    """
-    Get detailed schema for a specific table.
-
-    Args:
-        table_name: Name of the table to inspect
-
-    Returns:
-        {
-            "table_name": "orders",
-            "columns": [
-                {"name": "order_id", "type": "INTEGER", "nullable": False},
-                {"name": "customer_id", "type": "INTEGER", "nullable": False},
-                {"name": "amount", "type": "DECIMAL", "nullable": False}
-            ],
-            "primary_key": ["order_id"],
-            "foreign_keys": [
-                {
-                    "constrained_columns": ["customer_id"],
-                    "referred_table": "customers",
-                    "referred_columns": ["id"]
-                }
-            ],
-            "sample_data": [
-                {"order_id": 1, "customer_id": 101, "amount": 99.99},
-                {"order_id": 2, "customer_id": 102, "amount": 149.50}
-            ]
-        }
-    """
+    """Get detailed schema for a specific table."""
     logger.info(f"[TOOL get_table_schema] Called with table_name: {table_name}")
     try:
         db_manager = get_db_manager()
         inspector = db_manager.get_inspector()
 
-        # Get columns
         columns = inspector.get_columns(table_name)
         column_info = []
         for col in columns:
@@ -78,11 +45,9 @@ def get_table_schema(table_name: str) -> Dict[str, Any]:
                 }
             )
 
-        # Get primary key
         pk_constraint = inspector.get_pk_constraint(table_name)
         primary_key = pk_constraint.get("constrained_columns", []) if pk_constraint else []
 
-        # Get foreign keys
         foreign_keys = inspector.get_foreign_keys(table_name)
         fk_info = []
         for fk in foreign_keys:
@@ -94,7 +59,6 @@ def get_table_schema(table_name: str) -> Dict[str, Any]:
                 }
             )
 
-        # Get sample data (first 3 rows)
         sample_data = []
         try:
             sample_rows = db_manager.execute_query(f"SELECT * FROM {table_name} LIMIT 3")

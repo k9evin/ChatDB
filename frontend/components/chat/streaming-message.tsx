@@ -14,9 +14,9 @@ export function StreamingMessage({ currentAssistantMessage, toolCalls }: Streami
   return (
     <div className="flex gap-3 justify-start">
       <div className="flex gap-3 max-w-[80%]">
-        <Avatar className="w-12 h-12">
-          <AvatarImage src="/bot-avatar.png" alt="Bot" />
-          <AvatarFallback>B</AvatarFallback>
+        <Avatar className="w-10 h-10 mt-1 border border-border/50 shadow-sm shrink-0">
+          <AvatarImage src="/bot-avatar.png" alt="Bot" className="object-cover" />
+          <AvatarFallback className="bg-muted text-muted-foreground">AI</AvatarFallback>
         </Avatar>
         <Card>
           <CardContent className="p-4">

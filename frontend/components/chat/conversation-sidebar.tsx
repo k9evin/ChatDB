@@ -39,7 +39,7 @@ export function ConversationSidebar({
         <Sidebar className="h-full w-[260px] border-r border-border bg-sidebar flex flex-col">
             <SidebarHeader className="px-5 pt-6 pb-4">
                 <div className="flex items-center gap-3">
-                    <div className="bg-primary/10 p-2 rounded-xl">
+                    <div className="bg-primary/10 p-2 rounded-lg">
                         <Database className="h-5 w-5 text-primary" />
                     </div>
                     <p className="text-xl font-bold tracking-tight text-foreground">ChatDB</p>
@@ -50,13 +50,13 @@ export function ConversationSidebar({
                 {/* New Chat Button */}
                 <button
                     onClick={onNewConversation}
-                    className="flex items-center gap-2 w-full px-4 py-3 bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium rounded-xl transition-all shadow-sm shadow-primary/20"
+                    className="flex items-center gap-2 w-full px-4 py-3 bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium rounded-lg transition-all shadow-sm shadow-primary/20"
                 >
                     <Plus className="h-4 w-4" />
                     <span>New chat</span>
                 </button>
 
-                <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar pt-2">
+                <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-y-auto sidebar-scrollbar pt-2">
                     <div className="px-3">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
                             Recent

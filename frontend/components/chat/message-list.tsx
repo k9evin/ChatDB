@@ -72,7 +72,7 @@ export function MessageList({
 
   return (
     <ScrollArea ref={scrollAreaRef} className="flex-1 mb-4 pr-4">
-      <div className="max-w-4xl mx-auto w-full px-4">
+      <div className="max-w-4xl mx-auto w-full px-4 min-w-0">
         {/* Show empty state when no messages and not streaming */}
         {messages.length === 0 && !isStreaming ? (
           <SampleQueriesEmptyState onQueryClick={onSampleQueryClick} />
