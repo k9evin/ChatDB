@@ -90,24 +90,24 @@ export function ConversationSidebar({
 
                 {/* Theme Toggle */}
                 {mounted && (
-                    <div className="bg-background/50 border border-border rounded-lg p-1 flex">
+                    <div className="bg-[#CCCCCC]/50 border border-border rounded-lg p-1 flex">
                         <button
                             onClick={() => setTheme('light')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-sm font-medium rounded-md transition-all ${theme === 'light' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-sm font-medium rounded-md transition-all ${theme === 'light' ? 'bg-background shadow-md text-foreground border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
                             title="Light"
                         >
                             <Sun className={`h-4 w-4 ${theme === 'light' ? 'fill-current' : ''}`} />
                         </button>
                         <button
                             onClick={() => setTheme('dark')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-sm font-medium rounded-md transition-all ${theme === 'dark' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-sm font-medium rounded-md transition-all ${theme === 'dark' ? 'bg-background shadow-md text-foreground border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
                             title="Dark"
                         >
                             <Moon className={`h-4 w-4 ${theme === 'dark' ? 'fill-current' : ''}`} />
                         </button>
                         <button
                             onClick={() => setTheme('system')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-xs font-medium rounded-md transition-all ${theme === 'system' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-xs font-medium rounded-md transition-all ${theme === 'system' ? 'bg-background shadow-md text-foreground border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
                             title="System"
                         >
                             Auto

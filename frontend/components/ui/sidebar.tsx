@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -42,3 +44,5 @@ const SidebarFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTML
 SidebarFooter.displayName = 'SidebarFooter';
 
 export { Sidebar, SidebarHeader, SidebarContent, SidebarFooter };
+
+

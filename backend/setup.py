@@ -28,7 +28,7 @@ def create_env_file():
         print("Creating .env.example file...")
         env_example_content = """# OpenRouter Configuration
 OPENROUTER_API_KEY=sk-or-v1-your-key-here
-OPENROUTER_MODEL=openai/gpt-4o-mini
+OPENROUTER_MODEL=kwaipilot/kat-coder-pro:free
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 
 # Embedding Configuration

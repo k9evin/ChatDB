@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     # OpenRouter Configuration
     openrouter_api_key: str
-    openrouter_model: str = "openai/gpt-4o-mini"
+    openrouter_model: str = "kwaipilot/kat-coder-pro:free"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # Embedding Configuration

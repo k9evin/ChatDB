@@ -1,7 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { ThemeProvider } from '@/components/theme-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -13,21 +12,8 @@ export const metadata: Metadata = {
   },
   description:
     'ChatDB is a production-ready AI-powered SQL assistant that enables non-technical users to query databases using natural language. Built with LangGraph, featuring multi-agent orchestration, RAG-powered schema discovery, and real-time streaming responses.',
-  keywords: [
-    'SQL assistant',
-    'natural language to SQL',
-    'database query',
-    'AI database',
-    'LangGraph',
-    'RAG',
-    'database interface',
-    'SQL generator',
-    'chat database',
-    'AI SQL',
-    'database assistant',
-    'query database',
-  ],
-  authors: [{ name: 'ChatDB Team' }],
+  keywords: 'SQL assistant, natural language to SQL, database query, AI database, LangGraph, RAG, database interface, SQL generator, chat database, AI SQL, database assistant, query database',
+  authors: { name: 'ChatDB Team' },
   creator: 'ChatDB',
   publisher: 'ChatDB',
   robots: {
@@ -82,18 +68,13 @@ export const metadata: Metadata = {
   category: 'technology',
 };
 
+
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   );

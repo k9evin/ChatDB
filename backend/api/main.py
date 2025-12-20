@@ -43,11 +43,9 @@ app = FastAPI(title="ChatDB API", version="1.0.0")
 
 # CORS configuration
 settings = get_settings()
-cors_origins = (
-    settings.cors_origins.split(",")
-    if "," in settings.cors_origins
-    else [settings.cors_origins] if settings.cors_origins != "*" else ["*"]
-)
+cors_origins = [origin.strip() for origin in settings.cors_origins.split(",")]
+if "*" in cors_origins:
+    cors_origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -213,7 +211,7 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_json()
             user_message = data.get("message", "")
             database_url = data.get("database_url")  # Optional database URL
-            
+
             # Use thread_id from client if provided, otherwise generate new one
             # This allows conversation continuity across multiple messages
             if thread_id is None:
@@ -226,7 +224,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     logger.info(f"[WEBSOCKET] Generated new thread_id: {thread_id}")
             else:
                 logger.info(f"[WEBSOCKET] Reusing existing thread_id: {thread_id}")
-            
+
             config = {"configurable": {"thread_id": thread_id}}
 
             if not user_message:

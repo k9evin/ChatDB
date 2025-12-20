@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
+import config from "@/config";
 
 interface WebSocketMessage {
-  type: 'token' | 'tool_start' | 'tool_result' | 'complete' | 'error';
+  type: "token" | "tool_start" | "tool_result" | "complete" | "error";
   content?: string;
   tool?: string;
   output?: any;
@@ -17,9 +18,20 @@ interface UseWebSocketOptions {
   autoConnect?: boolean;
 }
 
+// Helper function to convert HTTP/HTTPS URL to WebSocket URL
+function getWebSocketUrl(
+  backendUrl: string,
+  path: string = "/ws/chat"
+): string {
+  const wsUrl = backendUrl
+    .replace(/^http:\/\//, "ws://")
+    .replace(/^https:\/\//, "wss://");
+  return `${wsUrl}${path}`;
+}
+
 export function useWebSocket(options: UseWebSocketOptions = {}) {
   const {
-    url = 'ws://localhost:8000/ws/chat',
+    url = getWebSocketUrl(config.backendUrl),
     onMessage,
     onError,
     onOpen,
@@ -34,7 +46,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   const hasLoggedError = useRef(false);
-  
+
   const onMessageRef = useRef(onMessage);
   const onErrorRef = useRef(onError);
   const onOpenRef = useRef(onOpen);
@@ -81,7 +93,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           onMessageRef.current?.(data);
         } catch (error) {
           if (!hasLoggedError.current) {
-            console.error('Error parsing WebSocket message:', error);
+            console.error("Error parsing WebSocket message:", error);
             hasLoggedError.current = true;
           }
         }
@@ -112,7 +124,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     } catch (error) {
       setIsConnecting(false);
       if (!hasLoggedError.current) {
-        console.error('Error creating WebSocket:', error);
+        console.error("Error creating WebSocket:", error);
         hasLoggedError.current = true;
         onErrorRef.current?.(error as Event);
       }
@@ -132,20 +144,27 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     setIsConnecting(false);
   }, []);
 
-  const sendMessage = useCallback((message: string, databaseUrl?: string, threadId?: string) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      const payload: { message: string; database_url?: string; thread_id?: string } = { message };
-      if (databaseUrl) {
-        payload.database_url = databaseUrl;
+  const sendMessage = useCallback(
+    (message: string, databaseUrl?: string, threadId?: string) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        const payload: {
+          message: string;
+          database_url?: string;
+          thread_id?: string;
+        } = { message };
+        if (databaseUrl) {
+          payload.database_url = databaseUrl;
+        }
+        if (threadId) {
+          payload.thread_id = threadId;
+        }
+        wsRef.current.send(JSON.stringify(payload));
+        return true;
       }
-      if (threadId) {
-        payload.thread_id = threadId;
-      }
-      wsRef.current.send(JSON.stringify(payload));
-      return true;
-    }
-    return false;
-  }, []);
+      return false;
+    },
+    []
+  );
 
   useEffect(() => {
     if (autoConnect) {

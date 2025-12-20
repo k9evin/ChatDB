@@ -69,7 +69,7 @@ A production-grade SQL assistant built with **LangGraph** that enables non-techn
 5. **Configure environment variables:**
    ```env
    OPENROUTER_API_KEY=sk-or-v1-your-key-here
-   OPENROUTER_MODEL=openai/gpt-4o-mini
+   OPENROUTER_MODEL=kwaipilot/kat-coder-pro:free
    DATABASE_URL=sqlite:///./demo_database.db
    ```
 

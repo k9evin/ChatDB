@@ -49,11 +49,10 @@ export function MessageItem({ message, dbType }: MessageItemProps) {
 
         <div
           className={`relative rounded-2xl px-5 py-3.5 shadow-sm text-sm leading-relaxed
-                        ${
-                          isUser
-                            ? 'bg-primary text-primary-foreground rounded-tr-none'
-                            : 'bg-card border border-border/50 text-card-foreground rounded-tl-none'
-                        }`}
+                        ${isUser
+              ? 'bg-primary text-primary-foreground rounded-tr-none'
+              : 'bg-card border border-border/50 text-card-foreground rounded-tl-none'
+            }`}
         >
           {/* Content */}
           <div className={isUser ? 'text-primary-foreground' : 'text-foreground'}>

@@ -22,7 +22,6 @@ primary_region = 'sjc'
   MAX_CONTEXT_LENGTH = '128000'
   MAX_RETRIES = '3'
   OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
-  OPENROUTER_MODEL = 'kwaipilot/kat-coder-pro:free'
   TEMPERATURE = '0.0'
 
 [http_service]
@@ -45,3 +44,4 @@ primary_region = 'sjc'
   cpu_kind = 'shared'
   cpus = 1
   memory_mb = 1024
+

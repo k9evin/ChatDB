@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useToast } from '@/components/ui/use-toast';
-import config from '@/config';
-import { useDatabase } from '@/contexts/database-context';
-import type { Message } from './useConversation';
-import { useWebSocket } from './useWebSocket';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import config from "@/config";
+import { useDatabase } from "@/contexts/database-context";
+import type { Message } from "./useConversation";
+import { useWebSocket } from "./useWebSocket";
 
 interface ChartData {
   chart_type: string;
@@ -32,19 +32,24 @@ interface UseChatProps {
   conversationId: string | null;
 }
 
-export function useChat({ onPersistConversation, conversationId }: UseChatProps) {
+export function useChat({
+  onPersistConversation,
+  conversationId,
+}: UseChatProps) {
   const { databaseUrl } = useDatabase();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [currentAssistantMessage, setCurrentAssistantMessage] = useState('');
+  const [currentAssistantMessage, setCurrentAssistantMessage] = useState("");
   const [toolCalls, setToolCalls] = useState<string[]>([]);
-  const [pendingChartData, setPendingChartData] = useState<ChartData | null>(null);
+  const [pendingChartData, setPendingChartData] = useState<ChartData | null>(
+    null
+  );
   const [pendingTableData, setPendingTableData] = useState<any[] | null>(null);
 
   // Use refs to store latest values for use in callbacks
-  const currentMessageRef = useRef('');
+  const currentMessageRef = useRef("");
   const pendingChartRef = useRef<ChartData | null>(null);
   const pendingTableRef = useRef<any[] | null>(null);
   const conversationIdRef = useRef<string | null>(null);
@@ -66,41 +71,47 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
     conversationIdRef.current = conversationId;
   }, [conversationId]);
 
-  // WebSocket connection
-  const wsUrl =
-    config.backendUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/chat';
-
   const { isConnected, sendMessage, isConnecting } = useWebSocket({
-    url: wsUrl,
     onMessage: (wsMessage) => {
-      if (wsMessage.type === 'token') {
+      if (wsMessage.type === "token") {
         // Append token to current assistant message
-        setCurrentAssistantMessage((prev) => prev + (wsMessage.content || ''));
-      } else if (wsMessage.type === 'tool_start') {
+        setCurrentAssistantMessage((prev) => prev + (wsMessage.content || ""));
+      } else if (wsMessage.type === "tool_start") {
         // Track tool usage
-        const toolName = wsMessage.tool || 'unknown';
+        const toolName = wsMessage.tool || "unknown";
         setToolCalls((prev) => [...prev, toolName]);
-      } else if (wsMessage.type === 'tool_result') {
+      } else if (wsMessage.type === "tool_result") {
         // Tool execution completed
-        console.log('[WebSocket] Tool result:', wsMessage.tool, wsMessage.output);
+        console.log(
+          "[WebSocket] Tool result:",
+          wsMessage.tool,
+          wsMessage.output
+        );
 
         // Parse tool output - backend sends ToolMessage with content as JSON string
         let output = wsMessage.output || {};
 
         // If output has a content field with JSON string, parse it
-        if (output.content && typeof output.content === 'string') {
+        if (output.content && typeof output.content === "string") {
           try {
             output = JSON.parse(output.content);
-            console.log('[WebSocket] Parsed output:', output);
+            console.log("[WebSocket] Parsed output:", output);
           } catch (e) {
-            console.warn('[WebSocket] Failed to parse output.content as JSON:', e);
+            console.warn(
+              "[WebSocket] Failed to parse output.content as JSON:",
+              e
+            );
           }
         }
 
         // Check if this is a chart suggestion or execution result
-        if (wsMessage.tool === 'suggest_chart_type') {
-          console.log('[WebSocket] suggest_chart_type output:', output);
-          if (output.should_visualize && output.chart_type && output.chart_type !== 'table') {
+        if (wsMessage.tool === "suggest_chart_type") {
+          console.log("[WebSocket] suggest_chart_type output:", output);
+          if (
+            output.should_visualize &&
+            output.chart_type &&
+            output.chart_type !== "table"
+          ) {
             // Store chart data for when message completes
             const chartData = {
               chart_type: output.chart_type,
@@ -108,16 +119,16 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
               config: output.chart_config || {},
             };
             console.log(
-              '[WebSocket] Setting pending chart data from suggest_chart_type:',
+              "[WebSocket] Setting pending chart data from suggest_chart_type:",
               chartData
             );
             // IMPORTANT: update ref immediately to avoid race with `complete`
             pendingChartRef.current = chartData;
             setPendingChartData(chartData);
           }
-        } else if (wsMessage.tool === 'prepare_chart_data') {
-          console.log('[WebSocket] prepare_chart_data output:', output);
-          if (output.chart_type && output.chart_type !== 'table') {
+        } else if (wsMessage.tool === "prepare_chart_data") {
+          console.log("[WebSocket] prepare_chart_data output:", output);
+          if (output.chart_type && output.chart_type !== "table") {
             // Store prepared chart data (this is the final chart data ready for visualization)
             const chartData = {
               chart_type: output.chart_type,
@@ -126,42 +137,45 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
               vega_lite_spec: output.vega_lite_spec || undefined,
             };
             console.log(
-              '[WebSocket] Setting pending chart data from prepare_chart_data:',
+              "[WebSocket] Setting pending chart data from prepare_chart_data:",
               chartData
             );
             // IMPORTANT: update ref immediately to avoid race with `complete`
             pendingChartRef.current = chartData;
             setPendingChartData(chartData);
           }
-        } else if (wsMessage.tool === 'execute_sql_query' && output?.rows) {
+        } else if (wsMessage.tool === "execute_sql_query" && output?.rows) {
           // Store table data (rows might be in output directly or in output.rows)
           const rows = output.rows || [];
           pendingTableRef.current = rows;
           setPendingTableData(rows);
         }
-      } else if (wsMessage.type === 'complete') {
+      } else if (wsMessage.type === "complete") {
         // Finalize assistant message
         // Use refs to get the latest values (avoiding stale closure issues)
         const finalMessage = currentMessageRef.current;
         const finalChart = pendingChartRef.current;
         const finalTable = pendingTableRef.current;
 
-        console.log('=== COMPLETE MESSAGE RECEIVED ===');
-        console.log('finalMessage length:', finalMessage?.length);
-        console.log('finalChart:', finalChart);
-        console.log('finalChart exists:', !!finalChart);
-        console.log('finalTable rows:', finalTable?.length);
+        console.log("=== COMPLETE MESSAGE RECEIVED ===");
+        console.log("finalMessage length:", finalMessage?.length);
+        console.log("finalChart:", finalChart);
+        console.log("finalChart exists:", !!finalChart);
+        console.log("finalTable rows:", finalTable?.length);
 
         if (finalMessage || finalChart || finalTable) {
           setMessages((prev) => {
             const newMessage = {
-              type: 'assistant' as const,
-              content: finalMessage || 'Query completed.',
+              type: "assistant" as const,
+              content: finalMessage || "Query completed.",
               chartData: finalChart || undefined,
               tableData: finalTable || undefined,
             };
-            console.log('Adding new message with chartData:', !!newMessage.chartData);
-            console.log('New message:', JSON.stringify(newMessage, null, 2));
+            console.log(
+              "Adding new message with chartData:",
+              !!newMessage.chartData
+            );
+            console.log("New message:", JSON.stringify(newMessage, null, 2));
 
             const next = [...prev, newMessage];
             // Persist conversation after state update completes
@@ -174,19 +188,19 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
           });
         }
         // Clear both state and refs immediately (avoid stale data on next message)
-        currentMessageRef.current = '';
+        currentMessageRef.current = "";
         pendingChartRef.current = null;
         pendingTableRef.current = null;
-        setCurrentAssistantMessage('');
+        setCurrentAssistantMessage("");
         setPendingChartData(null);
         setPendingTableData(null);
         setIsStreaming(false);
         setToolCalls([]);
-      } else if (wsMessage.type === 'error') {
+      } else if (wsMessage.type === "error") {
         toast({
-          title: 'Error',
-          description: wsMessage.content || 'An error occurred',
-          variant: 'destructive',
+          title: "Error",
+          description: wsMessage.content || "An error occurred",
+          variant: "destructive",
         });
         setIsStreaming(false);
       }
@@ -195,9 +209,10 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
       // Error logging is now handled inside useWebSocket hook
       // Only show toast notification (useWebSocket will prevent duplicate calls)
       toast({
-        title: 'Connection Error',
-        description: 'Failed to connect to backend. Please check if the server is running.',
-        variant: 'destructive',
+        title: "Connection Error",
+        description:
+          "Failed to connect to backend. Please check if the server is running.",
+        variant: "destructive",
       });
       setIsStreaming(false);
     },
@@ -207,20 +222,23 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
   const handleSubmit = async () => {
     // Early return with console log for debugging
     if (!input.trim()) {
-      console.log('[handleSubmit] Input is empty');
+      console.log("[handleSubmit] Input is empty");
       return;
     }
     if (!isConnected) {
-      console.log('[handleSubmit] WebSocket not connected. isConnected:', isConnected);
+      console.log(
+        "[handleSubmit] WebSocket not connected. isConnected:",
+        isConnected
+      );
       toast({
-        title: 'Not Connected',
-        description: 'Please wait for the connection to be established.',
-        variant: 'destructive',
+        title: "Not Connected",
+        description: "Please wait for the connection to be established.",
+        variant: "destructive",
       });
       return;
     }
     if (isStreaming) {
-      console.log('[handleSubmit] Already streaming');
+      console.log("[handleSubmit] Already streaming");
       return;
     }
 
@@ -230,7 +248,9 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
     // This prevents race conditions where multiple conversations get created
     const currentConvId =
       conversationId ||
-      (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`);
+      (typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}`);
 
     // Update ref immediately to prevent race condition with WebSocket complete handler
     if (!conversationId) {
@@ -238,7 +258,7 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
     }
 
     // Add user message
-    const userMsg: Message = { type: 'user' as const, content: userMessage };
+    const userMsg: Message = { type: "user" as const, content: userMessage };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
 
@@ -249,7 +269,7 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
     })();
 
     // Reset state for new response
-    setCurrentAssistantMessage('');
+    setCurrentAssistantMessage("");
     setPendingChartData(null);
     setPendingTableData(null);
     setToolCalls([]);
@@ -257,26 +277,30 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
 
     // Send message via WebSocket with database URL and conversationId
     // This ensures conversation continuity by using the same thread_id
-    const sent = sendMessage(userMessage, databaseUrl || undefined, currentConvId || undefined);
+    const sent = sendMessage(
+      userMessage,
+      databaseUrl || undefined,
+      currentConvId || undefined
+    );
 
     if (!sent) {
       toast({
-        title: 'Error',
-        description: 'Failed to send message. Please check your connection.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to send message. Please check your connection.",
+        variant: "destructive",
       });
       setIsStreaming(false);
     }
 
-    setInput('');
+    setInput("");
   };
 
   const handleSampleQueryClick = async (query: string) => {
     if (!isConnected) {
       toast({
-        title: 'Not Connected',
-        description: 'Please wait for the connection to be established.',
-        variant: 'destructive',
+        title: "Not Connected",
+        description: "Please wait for the connection to be established.",
+        variant: "destructive",
       });
       return;
     }
@@ -287,7 +311,9 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
     // Generate or use existing conversationId
     const currentConvId =
       conversationId ||
-      (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`);
+      (typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}`);
 
     // Update ref immediately to prevent race condition
     if (!conversationId) {
@@ -296,7 +322,7 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
 
     // Add user message and persist
     setMessages((prev) => {
-      const next = [...prev, { type: 'user' as const, content: query }];
+      const next = [...prev, { type: "user" as const, content: query }];
       setTimeout(() => {
         onPersistConversation(next, currentConvId, false);
       }, 0);
@@ -304,20 +330,24 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
     });
 
     // Reset state for new response
-    setCurrentAssistantMessage('');
+    setCurrentAssistantMessage("");
     setPendingChartData(null);
     setPendingTableData(null);
     setToolCalls([]);
     setIsStreaming(true);
 
     // Send message via WebSocket with the guaranteed conversationId
-    const sent = sendMessage(query, databaseUrl || undefined, currentConvId || undefined);
+    const sent = sendMessage(
+      query,
+      databaseUrl || undefined,
+      currentConvId || undefined
+    );
 
     if (!sent) {
       toast({
-        title: 'Error',
-        description: 'Failed to send message. Please check your connection.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to send message. Please check your connection.",
+        variant: "destructive",
       });
       setIsStreaming(false);
     }
@@ -326,21 +356,24 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
   const executeQuery = async (query: string) => {
     if (!databaseUrl) {
       toast({
-        title: 'Error',
-        description: 'Please configure a database connection first',
-        variant: 'destructive',
+        title: "Error",
+        description: "Please configure a database connection first",
+        variant: "destructive",
       });
       return;
     }
     try {
-      const response = await fetch(`${config.backendUrl}${config.api.executeQuery}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query,
-          database_url: databaseUrl,
-        }),
-      });
+      const response = await fetch(
+        `${config.backendUrl}${config.api.executeQuery}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query,
+            database_url: databaseUrl,
+          }),
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -349,8 +382,8 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
           const next = [
             ...prev,
             {
-              type: 'assistant' as const,
-              content: 'Query results:',
+              type: "assistant" as const,
+              content: "Query results:",
               tableData: rows,
             },
           ];
@@ -358,13 +391,13 @@ export function useChat({ onPersistConversation, conversationId }: UseChatProps)
           return next;
         });
       } else {
-        throw new Error('Failed to execute query');
+        throw new Error("Failed to execute query");
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to execute query',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to execute query",
+        variant: "destructive",
       });
     }
   };
