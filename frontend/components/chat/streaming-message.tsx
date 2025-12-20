@@ -19,7 +19,7 @@ export function StreamingMessage({ currentAssistantMessage, toolCalls }: Streami
           <AvatarFallback className="bg-muted text-muted-foreground">AI</AvatarFallback>
         </Avatar>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-4 text-sm leading-relaxed">
             {currentAssistantMessage ? (
               <MarkdownContent content={currentAssistantMessage} />
             ) : (

@@ -33,6 +33,77 @@ from backend.agent.nodes import _clean_tool_call_syntax
 graph = create_agent_graph()
 app = FastAPI(title="ChatDB API", version="1.0.0")
 
+
+# Initialize database on startup (non-blocking)
+@app.on_event("startup")
+async def startup_event():
+    """Initialize sample database if it doesn't exist (non-blocking)."""
+    import asyncio
+
+    async def init_database():
+        """Initialize database in background."""
+        try:
+            from backend.database.sample_data import create_sample_database
+            import os
+
+            settings = get_settings()
+
+            # For SQLite, ensure the directory exists
+            if settings.database_url.startswith("sqlite"):
+                # Extract file path from SQLite URL
+                db_path = settings.database_url.replace("sqlite:///", "").replace("sqlite://", "")
+                # Handle relative paths
+                if db_path.startswith("./"):
+                    db_path = db_path[2:]
+                elif not db_path.startswith("/"):
+                    db_path = os.path.join(os.getcwd(), db_path)
+
+                # Ensure directory exists
+                db_dir = os.path.dirname(db_path)
+                if db_dir and not os.path.exists(db_dir):
+                    os.makedirs(db_dir, exist_ok=True)
+                    logger.info(f"[STARTUP] Created database directory: {db_dir}")
+
+            # Check if database exists by trying to connect
+            try:
+                db_manager = DatabaseManager(settings.database_url)
+                inspector = db_manager.get_inspector()
+                tables = inspector.get_table_names()
+                if not tables:
+                    logger.info("[STARTUP] Database exists but is empty, creating sample data...")
+                    create_sample_database(settings.database_url)
+                    # Verify creation
+                    db_manager = DatabaseManager(settings.database_url)
+                    inspector = db_manager.get_inspector()
+                    tables = inspector.get_table_names()
+                    logger.info(
+                        f"[STARTUP] Sample database created with {len(tables)} tables: {tables}"
+                    )
+                else:
+                    logger.info(
+                        f"[STARTUP] Database already exists with {len(tables)} tables: {tables}"
+                    )
+            except Exception as e:
+                # Database doesn't exist or can't connect, create it
+                logger.info(
+                    f"[STARTUP] Database not found or error connecting: {e}, creating sample database..."
+                )
+                create_sample_database(settings.database_url)
+                # Verify creation
+                db_manager = DatabaseManager(settings.database_url)
+                inspector = db_manager.get_inspector()
+                tables = inspector.get_table_names()
+                logger.info(
+                    f"[STARTUP] Sample database created successfully with {len(tables)} tables: {tables}"
+                )
+        except Exception as e:
+            logger.error(f"[STARTUP] Could not initialize database: {e}", exc_info=True)
+
+    # Run database initialization in background without blocking startup
+    asyncio.create_task(init_database())
+    logger.info("[STARTUP] Database initialization started in background")
+
+
 settings = get_settings()
 cors_origins = [origin.strip() for origin in settings.cors_origins.split(",")]
 if "*" in cors_origins:
@@ -219,6 +290,18 @@ async def websocket_endpoint(websocket: WebSocket):
         except:
             pass
         await websocket.close(code=1011)
+
+
+@app.get("/health")
+async def health_check():
+    """Simple health check endpoint that responds immediately."""
+    return {"status": "ok", "service": "chatdb-backend"}
+
+
+@app.get("/")
+async def root():
+    """Root endpoint."""
+    return {"message": "ChatDB API", "docs": "/docs"}
 
 
 @app.post("/api/database/test")
