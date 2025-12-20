@@ -19,6 +19,7 @@ primary_region = 'sjc'
   EMBEDDING_PROVIDER = 'openai'
   LANGCHAIN_PROJECT = 'ChatDB-Agent'
   LANGCHAIN_TRACING_V2 = 'false'
+  LOG_LEVEL = 'WARNING'
   MAX_CONTEXT_LENGTH = '128000'
   MAX_RETRIES = '3'
   OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
@@ -34,10 +35,11 @@ primary_region = 'sjc'
 
   [[http_service.checks]]
     interval = '30s'
-    timeout = '10s'
-    grace_period = '30s'
+    timeout = '5s'
+    grace_period = '60s'
     method = 'GET'
     path = '/health'
+    protocol = 'http'
 
 [[vm]]
   memory = '1gb'

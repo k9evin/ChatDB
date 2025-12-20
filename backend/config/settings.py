@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     api_port: int = 8000
     api_debug: bool = False
     cors_origins: str = "*"
+    log_level: str = "WARNING"
 
     class Config:
         env_file = ".env"

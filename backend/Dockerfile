@@ -23,7 +23,11 @@ ENV PYTHONPATH=/app
 EXPOSE 8000
 
 # 启动命令
-CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use single worker for WebSocket support, but with proper async configuration
+# --timeout-keep-alive ensures connections stay alive
+# --limit-concurrency prevents overload
+CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75", "--limit-concurrency", "1000"]
+
 
 
 
